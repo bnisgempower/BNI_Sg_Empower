@@ -852,16 +852,6 @@
       <div class="errmsg" id="e-subName">Required</div>
     </div>
     <div class="fg">
-      <label>Sub's Company <span class="req">*</span></label>
-      <input type="text" id="subCompany" placeholder="e.g. Acme Pte Ltd" autocomplete="off">
-      <div class="errmsg" id="e-subCompany">Required</div>
-    </div>
-    <div class="fg">
-      <label>Sub's Trade / Industry <span class="req">*</span></label>
-      <input type="text" id="subTrade" placeholder="e.g. Financial Advisor" autocomplete="off">
-      <div class="errmsg" id="e-subTrade">Required</div>
-    </div>
-    <div class="fg">
       <label>Sub's Phone <span class="req">*</span></label>
       <input type="tel" id="subPhone" placeholder="+65 9123 4567" autocomplete="off">
       <div class="errmsg" id="e-subPhone">Required</div>
@@ -1317,10 +1307,8 @@ function pickSubStatus(s) {
 
 function step3bNext() {
   const txt = [
-    ['subName',    'e-subName'],
-    ['subCompany', 'e-subCompany'],
-    ['subTrade',   'e-subTrade'],
-    ['subPhone',   'e-subPhone'],
+    ['subName',  'e-subName'],
+    ['subPhone', 'e-subPhone'],
   ];
   let ok = true;
   txt.forEach(([id, eid]) => {
@@ -1335,11 +1323,11 @@ function step3bNext() {
 function goAbsent() {
   F.subSkipped = true;
   F.subName = ''; F.subCompany = ''; F.subTrade = ''; F.subPhone = ''; F.subStatus = '';
-  ['subName','subCompany','subTrade','subPhone'].forEach(id => {
+  ['subName','subPhone'].forEach(id => {
     const el = document.getElementById(id);
     if (el) { el.value = ''; el.classList.remove('err'); }
   });
-  ['e-subName','e-subCompany','e-subTrade','e-subPhone','e-subStatus'].forEach(errOff);
+  ['e-subName','e-subPhone','e-subStatus'].forEach(errOff);
   document.getElementById('tog-confirmed').classList.remove('sel');
   document.getElementById('tog-pending').classList.remove('sel');
   nav('s4', 4);
@@ -1624,10 +1612,8 @@ function buildReview() {
             rows: [
               ['Attending',   'No — Sending Sub ❌'],
               ['Payment',     F.payment || '—'],
-              ['Sub Name',    F.subName],
-              ['Sub Company', F.subCompany],
-              ['Sub Trade',   F.subTrade],
-              ['Sub Phone',   F.subPhone],
+              ['Sub Name',  F.subName],
+              ['Sub Phone', F.subPhone],
               ['Sub Status',  F.subStatus],
             ]
           },
@@ -2101,7 +2087,7 @@ function resetAll() {
   // Clear UI inputs
   document.getElementById('memberSelect').value = keep;
   document.querySelectorAll('input[name="pay"]').forEach(r => r.checked = false);
-  ['subName','subCompany','subTrade','subPhone'].forEach(id => {
+  ['subName','subPhone'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
