@@ -367,7 +367,7 @@ async function loadMissing() {
 
   try {
     const data = await callAction('getMissing');
-    const { missing, total, submitted } = data;
+    const { missing, submittedNames, total, submitted } = data;
 
     res.innerHTML = `
       <div class="result-stat">
@@ -389,6 +389,11 @@ async function loadMissing() {
         <div class="name-chips">
           ${missing.map(n => `<span class="name-chip missing">${n}</span>`).join('')}
         </div>` : '<div class="success-msg">✅ All members have submitted!</div>'}
+      ${submittedNames && submittedNames.length > 0 ? `
+        <div class="name-list-label" style="margin-top:14px;">Submitted ✅</div>
+        <div class="name-chips">
+          ${submittedNames.map(n => `<span class="name-chip present">${n}</span>`).join('')}
+        </div>` : ''}
     `;
   } catch {
     res.innerHTML = '<div class="error-msg">Failed to load — check connection.</div>';
