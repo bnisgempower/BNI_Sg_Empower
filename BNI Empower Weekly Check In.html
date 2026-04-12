@@ -1095,7 +1095,7 @@ let current = 's1';
 
   // Auto week-of: next Monday (or today if Monday)
   F.weekOf = calcWeekOf();
-  document.getElementById('weekDisplay').textContent = F.weekOf;
+  document.getElementById('weekDisplay').textContent = F.weekOf + (isPhysicalMeeting() ? ' (Physical)' : ' (Online)');
 
   // Remember-me
   const saved = localStorage.getItem('bni_member');
@@ -2124,7 +2124,7 @@ function resetAll() {
   });
 
   document.getElementById('submitBtn').disabled = false;
-  document.getElementById('weekDisplay').textContent = F.weekOf;
+  document.getElementById('weekDisplay').textContent = F.weekOf + (isPhysicalMeeting() ? ' (Physical)' : ' (Online)');
   nav('s1', 1);
 }
 
