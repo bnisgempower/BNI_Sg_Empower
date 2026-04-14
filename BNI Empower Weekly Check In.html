@@ -853,7 +853,16 @@
     </div>
     <div class="fg">
       <label>Sub's Phone <span class="req">*</span></label>
-      <input type="tel" id="subPhone" placeholder="+65 9123 4567" autocomplete="off">
+      <div class="phone-row">
+        <button type="button" class="prefix-btn" id="sub-prefixBtn" onclick="openCountryPicker('sub')">
+          <img id="sub-prefixFlag" class="pfx-flag" src="https://flagcdn.com/w40/sg.png" alt="SG">
+          <span id="sub-prefixCode" class="pfx-code">+65</span>
+          <span class="pfx-arrow">▾</span>
+        </button>
+        <div class="fg">
+          <input type="tel" id="subPhone" placeholder="81234567" inputmode="numeric" autocomplete="off">
+        </div>
+      </div>
       <div class="errmsg" id="e-subPhone">Required</div>
     </div>
     <div class="fg">
@@ -1059,7 +1068,7 @@ const F = {
   member: '', weekOf: '',
   attending: '',
   payment: '',
-  subName: '', subCompany: '', subTrade: '', subPhone: '', subStatus: '',
+  subName: '', subCompany: '', subTrade: '', subDialCode: '', subPhone: '', subStatus: '',
   subSkipped: false,  // true when member is absent with no sub
   hasVisitor: '',
   visitors: [],  // [{name, company, industry, contact, invitedBy}]
@@ -1317,16 +1326,21 @@ function step3bNext() {
     else    { errOff(eid); document.getElementById(id).classList.remove('err'); F[id] = v; }
   });
   if (!F.subStatus) { errOn('e-subStatus'); ok = false; } else { errOff('e-subStatus'); }
-  if (ok) { F.subSkipped = false; nav('s4', 4); }
+  if (ok) {
+    F.subDialCode = document.getElementById('sub-prefixCode').textContent.trim();
+    F.subSkipped = false;
+    nav('s4', 4);
+  }
 }
 
 function goAbsent() {
   F.subSkipped = true;
-  F.subName = ''; F.subCompany = ''; F.subTrade = ''; F.subPhone = ''; F.subStatus = '';
+  F.subName = ''; F.subCompany = ''; F.subTrade = ''; F.subDialCode = ''; F.subPhone = ''; F.subStatus = '';
   ['subName','subPhone'].forEach(id => {
     const el = document.getElementById(id);
     if (el) { el.value = ''; el.classList.remove('err'); }
   });
+  if (typeof COUNTRIES !== 'undefined') _setPrefix(COUNTRIES[0], 'sub');
   ['e-subName','e-subPhone','e-subStatus'].forEach(errOff);
   document.getElementById('tog-confirmed').classList.remove('sel');
   document.getElementById('tog-pending').classList.remove('sel');
@@ -1613,7 +1627,7 @@ function buildReview() {
               ['Attending',   'No — Sending Sub ❌'],
               ['Payment',     F.payment || '—'],
               ['Sub Name',  F.subName],
-              ['Sub Phone', F.subPhone],
+              ['Sub Phone', (F.subDialCode ? F.subDialCode + ' ' : '') + F.subPhone],
               ['Sub Status',  F.subStatus],
             ]
           },
@@ -1695,11 +1709,12 @@ async function submitForm() {
     memberName:     F.member,
     attending:      F.attending,
     paymentStatus:  F.attending === 'yes'  ? F.payment    : '',
-    subName:        F.attending === 'no'   ? F.subName    : '',
-    subCompany:     F.attending === 'no'   ? F.subCompany : '',
-    subTrade:       F.attending === 'no'   ? F.subTrade   : '',
-    subPhone:       F.attending === 'no'   ? F.subPhone   : '',
-    subStatus:      F.attending === 'no'   ? F.subStatus  : '',
+    subName:        F.attending === 'no'   ? F.subName      : '',
+    subCompany:     F.attending === 'no'   ? F.subCompany   : '',
+    subTrade:       F.attending === 'no'   ? F.subTrade     : '',
+    subDialCode:    F.attending === 'no'   ? F.subDialCode  : '',
+    subPhone:       F.attending === 'no'   ? F.subPhone     : '',
+    subStatus:      F.attending === 'no'   ? F.subStatus    : '',
     hasVisitor:      F.hasVisitor,
     visitorCount:    F.hasVisitor === 'yes' ? F.visitors.length : 0,
     visitors:        F.hasVisitor === 'yes' ? F.visitors : [],
@@ -2021,14 +2036,18 @@ function _flagUrl(iso) {
   return 'https://flagcdn.com/w40/' + iso + '.png';
 }
 
-function _setPrefix(country) {
-  const img = document.getElementById('vNew-prefixFlag');
+let _cpTarget = 'visitor'; // 'visitor' or 'sub'
+
+function _setPrefix(country, target) {
+  const pfx = (target !== undefined ? target : _cpTarget) === 'sub' ? 'sub' : 'vNew';
+  const img = document.getElementById(pfx + '-prefixFlag');
   img.src = _flagUrl(country.iso);
   img.alt = country.iso.toUpperCase();
-  document.getElementById('vNew-prefixCode').textContent = country.dial;
+  document.getElementById(pfx + '-prefixCode').textContent = country.dial;
 }
 
-function openCountryPicker() {
+function openCountryPicker(target) {
+  _cpTarget = target || 'visitor';
   const overlay = document.getElementById('cpOverlay');
   const search  = document.getElementById('cpSearch');
   _cpFiltered = COUNTRIES;
@@ -2055,7 +2074,8 @@ function filterCountries(q) {
 }
 
 function _renderCpList(list) {
-  const currentIso = document.getElementById('vNew-prefixFlag').alt.toLowerCase();
+  const pfx        = _cpTarget === 'sub' ? 'sub' : 'vNew';
+  const currentIso = document.getElementById(pfx + '-prefixFlag').alt.toLowerCase();
   document.getElementById('cpList').innerHTML = list.map(c =>
     `<button type="button" class="cp-item${c.iso === currentIso ? ' selected' : ''}"
        onclick="selectCountry(${COUNTRIES.indexOf(c)})">
@@ -2067,9 +2087,10 @@ function _renderCpList(list) {
 }
 
 function selectCountry(idx) {
-  _setPrefix(COUNTRIES[idx]);
+  _setPrefix(COUNTRIES[idx], _cpTarget);
   closeCountryPicker();
-  document.getElementById('vNew-contact').focus();
+  const focusId = _cpTarget === 'sub' ? 'subPhone' : 'vNew-contact';
+  document.getElementById(focusId).focus();
 }
 
 // ── RESET ────────────────────────────────────────────
@@ -2100,7 +2121,10 @@ function resetAll() {
     const el = document.getElementById(id);
     if (el) { el.value = ''; el.classList.remove('err'); }
   });
-  if (typeof COUNTRIES !== 'undefined') _setPrefix(COUNTRIES[0]);
+  if (typeof COUNTRIES !== 'undefined') {
+    _setPrefix(COUNTRIES[0], 'visitor');
+    _setPrefix(COUNTRIES[0], 'sub');
+  }
   ['yn-yes','yn-sub','yn-absent','vyn-yes','vyn-no'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.className = 'yn-btn';
