@@ -463,7 +463,7 @@
       </div>
 
       <div class="field">
-        <label>Office Address</label>
+        <label>Office Address <span class="req">*</span></label>
         <textarea id="officeAddress" placeholder="Full office or mailing address" rows="2"></textarea>
       </div>
     </div>
@@ -558,7 +558,7 @@
     <div class="progress-bar" id="pb-5"></div>
     <div class="section-card">
       <div class="section-title">
-        <span class="step-badge">5</span>Company Logo
+        <span class="step-badge">5</span>Company Logo <span class="req">*</span>
       </div>
 
       <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;line-height:1.5">
@@ -731,15 +731,19 @@ function validateStep(step) {
     if (bd && !/^\d{1,2}\s+[A-Za-z]{3}\s+\d{4}$/.test(bd)) return 'Birthday must be in DD MMM YYYY format (e.g. 01 Mar 2002).';
   }
   if (step === 2) {
-    if (!req('businessName'))  return 'Business name is required.';
-    if (!req('industry'))      return 'Industry is required.';
-    if (!req('tradeCategory')) return 'Trade category is required.';
-    if (!req('mobile'))        return 'Mobile number is required.';
+    if (!req('businessName'))   return 'Business name is required.';
+    if (!req('industry'))       return 'Industry is required.';
+    if (!req('tradeCategory'))  return 'Trade category is required.';
+    if (!req('mobile'))         return 'Mobile number is required.';
+    if (!req('officeAddress'))  return 'Office address is required.';
   }
   if (step === 4) {
     if (!req('businessEmail')) return 'Business email is required.';
     const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRe.test(req('businessEmail'))) return 'Please enter a valid email address.';
+  }
+  if (step === 5) {
+    if (!logoBase64) return 'Please upload your company logo before continuing.';
   }
   return null; // valid
 }
@@ -883,9 +887,8 @@ async function submitForm() {
 
   try {
     const res = await fetch(APPS_SCRIPT_URL, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(payload),
+      method: 'POST',
+      body:   JSON.stringify(payload),
     });
     const json = await res.json();
     if (json.status !== 'ok') throw new Error(json.message || 'Server error');
