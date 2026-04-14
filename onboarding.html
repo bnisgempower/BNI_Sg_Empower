@@ -412,7 +412,7 @@
 
       <div class="field">
         <label>Birthday <span class="req">*</span></label>
-        <input type="text" id="birthday" placeholder="MM/DD/YYYY" maxlength="10" inputmode="numeric">
+        <input type="text" id="birthday" placeholder="01 Mar 2002" maxlength="11" autocomplete="off">
       </div>
 
       <div class="field">
@@ -672,10 +672,12 @@ document.getElementById('fullName').addEventListener('input', function() {
 });
 
 function fmtBirthday(e) {
-  let v = e.target.value.replace(/\D/g, '');
-  if (v.length >= 3) v = v.slice(0,2) + '/' + v.slice(2);
-  if (v.length >= 6) v = v.slice(0,5) + '/' + v.slice(5,9);
-  e.target.value = v;
+  // Auto-capitalise the month abbreviation: "01 mar 2002" → "01 Mar 2002"
+  const parts = e.target.value.split(' ');
+  if (parts.length >= 2 && parts[1].length >= 1) {
+    parts[1] = parts[1].charAt(0).toUpperCase() + parts[1].slice(1).toLowerCase();
+    e.target.value = parts.join(' ');
+  }
 }
 
 // ── Progress bar ──────────────────────────────────────────────────────────────
@@ -726,7 +728,7 @@ function validateStep(step) {
     if (!req('firstName')) return 'First name is required.';
     if (!req('surname'))   return 'Surname is required.';
     const bd = req('birthday');
-    if (bd && !/^\d{2}\/\d{2}\/\d{4}$/.test(bd)) return 'Birthday must be in MM/DD/YYYY format.';
+    if (bd && !/^\d{1,2}\s+[A-Za-z]{3}\s+\d{4}$/.test(bd)) return 'Birthday must be in DD MMM YYYY format (e.g. 01 Mar 2002).';
   }
   if (step === 2) {
     if (!req('businessName'))  return 'Business name is required.';
