@@ -268,6 +268,101 @@
     .step-page { display: none; }
     .step-page.active { display: block; }
 
+    /* ── Power Team Preview ── */
+    .pt-toggle-btn {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--red-border);
+      border-radius: var(--r);
+      color: var(--red);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 13px 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      transition: background var(--tr), border-color var(--tr);
+    }
+    .pt-toggle-btn:hover { background: var(--red-dim); }
+    .pt-toggle-btn .pt-arrow { font-size: 11px; transition: transform var(--tr); }
+    .pt-toggle-btn.open .pt-arrow { transform: rotate(180deg); }
+
+    .pt-panel {
+      display: none;
+      margin-bottom: 16px;
+    }
+    .pt-panel.open { display: block; }
+
+    .pt-loading {
+      text-align: center;
+      padding: 24px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .pt-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 420px) {
+      .pt-grid { grid-template-columns: 1fr; }
+    }
+
+    .pt-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      overflow: hidden;
+    }
+    .pt-card-header {
+      background: var(--red);
+      color: #000;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 8px 12px;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+    }
+    .pt-trades {
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .pt-trade {
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      line-height: 1.3;
+    }
+    .pt-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .pt-dot.avail   { background: var(--success); }
+    .pt-dot.unavail { background: var(--danger); }
+    .pt-trade.avail   { color: var(--text); }
+    .pt-trade.unavail { color: var(--text-muted); text-decoration: line-through; }
+
+    .pt-legend {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 10px;
+      padding: 0 4px;
+    }
+    .pt-legend span { display: flex; align-items: center; gap: 5px; }
+    .pt-legend .pt-dot { width: 8px; height: 8px; }
+
     /* ── Intro page ── */
     .intro-card {
       background: var(--surface);
@@ -381,6 +476,20 @@
         <li>Company logo upload (JPG or PNG)</li>
       </ul>
     </div>
+    <!-- Power Team Preview -->
+    <button class="pt-toggle-btn" id="ptToggleBtn" onclick="togglePowerTeams()">
+      🏆 Click to preview Power Teams!
+      <span class="pt-arrow">▾</span>
+    </button>
+    <div class="pt-panel" id="ptPanel">
+      <div class="pt-loading" id="ptLoading">Loading Power Teams…</div>
+      <div id="ptGrid" class="pt-grid" style="display:none;"></div>
+      <div class="pt-legend" id="ptLegend" style="display:none;">
+        <span><span class="pt-dot avail"></span> Trade Available</span>
+        <span><span class="pt-dot unavail"></span> Trade Unavailable</span>
+      </div>
+    </div>
+
     <div class="nav-row">
       <button class="btn btn-primary" onclick="goTo(1)">Get Started →</button>
     </div>
@@ -412,7 +521,7 @@
 
       <div class="field">
         <label>Birthday <span class="req">*</span></label>
-        <input type="text" id="birthday" placeholder="01 Mar 2002" maxlength="11" autocomplete="off">
+        <input type="text" id="birthday" placeholder="MM/DD/YYYY" maxlength="11" inputmode="numeric" autocomplete="off">
       </div>
 
       <div class="field">
@@ -634,6 +743,7 @@ const TOTAL_STEPS = 6; // steps 1–6 (0 = intro, success = separate)
 let logoBase64   = '';
 let logoMime     = '';
 let currentStep  = 0;
+let ptLoaded     = false;   // whether power teams have been fetched yet
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 (function init() {
@@ -646,8 +756,9 @@ let currentStep  = 0;
     document.getElementById(id).addEventListener('input', syncFullName);
   });
 
-  // Birthday auto-formatting  (MM/DD/YYYY)
+  // Birthday: auto-insert slashes while typing, convert to DD MMM YYYY on blur
   document.getElementById('birthday').addEventListener('input', fmtBirthday);
+  document.getElementById('birthday').addEventListener('blur',  convertBirthdayOnBlur);
 
   // Drag-over styling on upload zone
   const zone = document.getElementById('upload-zone');
@@ -671,13 +782,23 @@ document.getElementById('fullName').addEventListener('input', function() {
   this._edited = this.value.trim() !== '';
 });
 
+// As-you-type: insert slashes → MM/DD/YYYY
 function fmtBirthday(e) {
-  // Auto-capitalise the month abbreviation: "01 mar 2002" → "01 Mar 2002"
-  const parts = e.target.value.split(' ');
-  if (parts.length >= 2 && parts[1].length >= 1) {
-    parts[1] = parts[1].charAt(0).toUpperCase() + parts[1].slice(1).toLowerCase();
-    e.target.value = parts.join(' ');
-  }
+  let v = e.target.value.replace(/\D/g, '').slice(0, 8);
+  if (v.length >= 3) v = v.slice(0, 2) + '/' + v.slice(2);
+  if (v.length >= 6) v = v.slice(0, 5) + '/' + v.slice(5);
+  e.target.value = v;
+}
+
+// On blur: convert MM/DD/YYYY → DD MMM YYYY
+function convertBirthdayOnBlur(e) {
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const m = e.target.value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!m) return;
+  const month = parseInt(m[1], 10);
+  const day   = parseInt(m[2], 10);
+  if (month < 1 || month > 12) return;
+  e.target.value = String(day).padStart(2, '0') + ' ' + MONTHS[month - 1] + ' ' + m[3];
 }
 
 // ── Progress bar ──────────────────────────────────────────────────────────────
@@ -693,6 +814,68 @@ function renderProgress(step) {
       pb.appendChild(span);
     }
   }
+}
+
+// ── Power Team Preview ────────────────────────────────────────────────────────
+function togglePowerTeams() {
+  const btn   = document.getElementById('ptToggleBtn');
+  const panel = document.getElementById('ptPanel');
+  const open  = panel.classList.toggle('open');
+  btn.classList.toggle('open', open);
+  if (open && !ptLoaded) loadPowerTeams();
+}
+
+async function loadPowerTeams() {
+  const loading = document.getElementById('ptLoading');
+  const grid    = document.getElementById('ptGrid');
+  const legend  = document.getElementById('ptLegend');
+
+  loading.style.display = 'block';
+  grid.style.display    = 'none';
+  legend.style.display  = 'none';
+
+  try {
+    const url = APPS_SCRIPT_URL + '?action=getPowerTeams';
+    const res  = await fetch(url);
+    const json = await res.json();
+    const teams = json.teams || [];
+
+    if (!teams.length) {
+      loading.textContent = 'No power team data found.';
+      return;
+    }
+
+    grid.innerHTML = teams.map(team => {
+      const tradesHtml = team.trades.length
+        ? team.trades.map(t => `
+            <div class="pt-trade ${t.available ? 'avail' : 'unavail'}">
+              <span class="pt-dot ${t.available ? 'avail' : 'unavail'}"></span>
+              ${escHtml(t.trade)}
+            </div>`).join('')
+        : '<div style="font-size:12px;color:var(--text-muted);">No trades listed</div>';
+
+      return `
+        <div class="pt-card">
+          <div class="pt-card-header">${escHtml(team.name || 'Unnamed Team')}</div>
+          <div class="pt-trades">${tradesHtml}</div>
+        </div>`;
+    }).join('');
+
+    loading.style.display = 'none';
+    grid.style.display    = 'grid';
+    legend.style.display  = 'flex';
+    ptLoaded = true;
+  } catch (err) {
+    loading.textContent = 'Could not load Power Teams. Please try again later.';
+  }
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────────
