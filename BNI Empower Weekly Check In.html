@@ -1053,15 +1053,8 @@ const PAYMENT = {
   paynowType:  '2',            //   '2' = mobile number, '3' = NRIC/FIN
 };
 
-// ── ROSTER ───────────────────────────────────────────
-const MEMBERS = [
-  'Arun Prasad','Ben Wong','Ben Tee','Benjamin Ng','Daniel Yen',
-  'Deborah Chueh','Iskons','Ismail Khamis','Ivan Ang','Jaron Chan',
-  'Jay Tan','Jia Zheng Lee','Joanne Sooi','Junxian Zhang','Kay Tan',
-  'Kevin Phua','Lawrence Ku','Mark Duma','Pamela Lin','Rachel Teo',
-  'Rajiv','Sandy Au','Sean Wee','ShuHui Zhao','Wee Khai Pang',
-  'Yu Xi Kuek','Zefirelli Noordin'
-];
+// ── ROSTER — loaded from Active_Members sheet on init ────────────────────────
+let MEMBERS = [];
 
 // ── STATE ────────────────────────────────────────────
 const F = {
@@ -1083,18 +1076,27 @@ const STAGE = {
 let current = 's1';
 
 // ── INIT ─────────────────────────────────────────────
-(function init() {
-  // Populate dropdown (sorted)
+(async function init() {
+  // Auto week-of: next Monday (or today if Monday)
+  F.weekOf = calcWeekOf();
+  document.getElementById('weekDisplay').textContent = F.weekOf + (isPhysicalMeeting() ? ' (Physical)' : ' (Online)');
+
+  // Load member roster from sheet
   const sel = document.getElementById('memberSelect');
-  [...MEMBERS].sort().forEach(n => {
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL + '?action=getRoster');
+    const json = await res.json();
+    MEMBERS = json.members || [];
+  } catch (e) {
+    MEMBERS = [];
+  }
+
+  // Populate dropdown (already sorted by backend)
+  MEMBERS.forEach(n => {
     const o = document.createElement('option');
     o.value = o.textContent = n;
     sel.appendChild(o);
   });
-
-  // Auto week-of: next Monday (or today if Monday)
-  F.weekOf = calcWeekOf();
-  document.getElementById('weekDisplay').textContent = F.weekOf + (isPhysicalMeeting() ? ' (Physical)' : ' (Online)');
 
   // Remember-me
   const saved = localStorage.getItem('bni_member');

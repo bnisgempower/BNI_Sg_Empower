@@ -672,20 +672,22 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxYCpexo7cuQwYM
 const MEETING_H = 8;   // hour   (24-hr, so 8 = 8 AM)
 const MEETING_M = 0;   // minute
 
-// Members who can sign in:
-const MEMBERS = [
-  'Arun Prasad','Ben Wong','Ben Tee','Benjamin Ng','Daniel Yen',
-  'Deborah Chueh','Iskons','Ismail Khamis','Ivan Ang','Jaron Chan',
-  'Jay Tan','Jia Zheng Lee','Joanne Sooi','Junxian Zhang','Kay Tan',
-  'Kevin Phua','Lawrence Ku','Mark Duma','Pamela Lin','Rachel Teo',
-  'Rajiv','Sandy Au','Sean Wee','ShuHui Zhao','Wee Khai Pang',
-  'Yu Xi Kuek','Zefirelli Noordin'
-];
+// Members who can sign in — loaded from Active_Members sheet on init:
+let MEMBERS = [];
 
 // ── INIT ────────────────────────────────────────────────────
 let _signedNames = [];   // names signed in this session — persisted in localStorage
 
-(function init() {
+(async function init() {
+  // Load roster from sheet
+  try {
+    const res = await fetch(APPS_SCRIPT_URL + '?action=getRoster');
+    const json = await res.json();
+    MEMBERS = json.members || [];
+  } catch (e) {
+    MEMBERS = [];
+  }
+
   // Build name grid (sorted alphabetically by first name)
   const grid = document.getElementById('nameGrid');
   [...MEMBERS].sort().forEach(name => {
