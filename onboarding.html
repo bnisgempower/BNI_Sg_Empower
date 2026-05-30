@@ -515,13 +515,29 @@
       </div>
 
       <div class="field">
-        <label>Full Name (as on ID / for records)</label>
+        <label>Full Name (as on ID / for records) <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px;color:#555">*autofill can be edited</span></label>
         <input type="text" id="fullName" placeholder="Auto-filled — edit if needed">
       </div>
 
       <div class="field">
-        <label>Birthday <span class="req">*</span></label>
-        <input type="text" id="birthday" placeholder="MM/DD/YYYY" maxlength="11" inputmode="numeric" autocomplete="off">
+        <label>Birthday (DD MMM YYYY) <span class="req">*</span></label>
+        <div class="field-row" style="margin-bottom:0">
+          <div class="field" style="margin-bottom:0">
+            <select id="bdDay"><option value="">Day</option></select>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <select id="bdMonth">
+              <option value="">Month</option>
+              <option>Jan</option><option>Feb</option><option>Mar</option>
+              <option>Apr</option><option>May</option><option>Jun</option>
+              <option>Jul</option><option>Aug</option><option>Sep</option>
+              <option>Oct</option><option>Nov</option><option>Dec</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <select id="bdYear"><option value="">Year</option></select>
+          </div>
+        </div>
       </div>
 
       <div class="field">
@@ -662,33 +678,52 @@
     </div>
   </div>
 
-  <!-- ── Step 5: Company Logo ── -->
+  <!-- ── Step 5: Company Logo & Headshot ── -->
   <div class="step-page" id="step-5">
     <div class="progress-bar" id="pb-5"></div>
+
+    <!-- Company Logo -->
     <div class="section-card">
       <div class="section-title">
         <span class="step-badge">5</span>Company Logo <span class="req">*</span>
       </div>
-
       <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;line-height:1.5">
-        Upload your company logo (JPG or PNG). It will be saved to the BNI Empower Google Drive.
+        Upload your company logo (JPG or PNG).
       </p>
-
-      <!-- Upload zone (shown when no file selected) -->
       <div class="logo-upload-zone" id="upload-zone">
         <input type="file" id="logoFile" accept="image/jpeg,image/png" onchange="handleLogoFile(this.files[0])">
         <div class="logo-upload-icon">🖼️</div>
         <p><strong>Tap to choose</strong> or drag &amp; drop</p>
         <p class="hint">JPG or PNG · max 10 MB · will be auto-resized</p>
       </div>
-
-      <!-- Preview (shown after file selected) -->
       <div class="logo-preview-wrap" id="logo-preview">
         <img id="logo-preview-img" src="" alt="Logo preview">
         <span class="file-name" id="logo-file-name"></span>
         <button class="logo-remove" onclick="clearLogo()">✕ Remove</button>
       </div>
     </div>
+
+    <!-- Corporate Headshot -->
+    <div class="section-card">
+      <div class="section-title" style="margin-bottom:12px">
+        Corporate Headshot
+      </div>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;line-height:1.5">
+        Upload your corporate headshot (JPG or PNG). It will be saved to the BNI Empower Google Drive.
+      </p>
+      <div class="logo-upload-zone" id="headshot-upload-zone">
+        <input type="file" id="headshotFile" accept="image/jpeg,image/png" onchange="handleHeadshotFile(this.files[0])">
+        <div class="logo-upload-icon">🤳</div>
+        <p><strong>Tap to choose</strong> or drag &amp; drop</p>
+        <p class="hint">JPG or PNG · max 10 MB · will be auto-resized</p>
+      </div>
+      <div class="logo-preview-wrap" id="headshot-preview">
+        <img id="headshot-preview-img" src="" alt="Headshot preview">
+        <span class="file-name" id="headshot-file-name"></span>
+        <button class="logo-remove" onclick="clearHeadshot()">✕ Remove</button>
+      </div>
+    </div>
+
     <div id="err-5" class="error-banner"></div>
     <div class="nav-row">
       <button class="btn btn-secondary" onclick="goTo(4)">← Back</button>
@@ -728,37 +763,48 @@
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxYCpexo7cuQwYMpBwLtVn48hEQAoz1PQw17INXwZpXz-nh7foLB4-8Dhct2a7yNE8lMg/exec';
 
-const ROSTER = [
-  'Arun Prasad','Ben Wong','Ben Tee','Benjamin Ng','Daniel Yen',
-  'Deborah Chueh','Iskons','Ismail Khamis','Ivan Ang','Jaron Chan',
-  'Jay Tan','Jia Zheng Lee','Joanne Sooi','Junxian Zhang','Kay Tan',
-  'Kevin Phua','Lawrence Ku','Mark Duma','Pamela Lin','Rachel Teo',
-  'Rajiv','Sandy Au','Sean Wee','ShuHui Zhao','Wee Khai Pang',
-  'Yu Xi Kuek','Zefirelli Noordin',
-];
+// Sponsored By datalist — populated dynamically from Active_Members sheet
 
 const TOTAL_STEPS = 6; // steps 1–6 (0 = intro, success = separate)
 
 // ── State ─────────────────────────────────────────────────────────────────────
-let logoBase64   = '';
-let logoMime     = '';
-let currentStep  = 0;
+let logoBase64      = '';
+let logoMime        = '';
+let headshotBase64  = '';
+let headshotMime    = '';
+let currentStep     = 0;
 let ptLoaded     = false;   // whether power teams have been fetched yet
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-(function init() {
-  // Populate datalist for sponsored-by field
+(async function init() {
+  // Populate datalist for sponsored-by field from live roster
   const dl = document.getElementById('roster-list');
-  ROSTER.forEach(n => { const o = document.createElement('option'); o.value = n; dl.appendChild(o); });
+  try {
+    const res  = await fetch(APPS_SCRIPT_URL + '?action=getRoster');
+    const json = await res.json();
+    (json.members || []).forEach(n => { const o = document.createElement('option'); o.value = n; dl.appendChild(o); });
+  } catch (_) {};
 
   // Auto-fill Full Name when first/surname change
   ['firstName','surname'].forEach(id => {
     document.getElementById(id).addEventListener('input', syncFullName);
   });
 
-  // Birthday: auto-insert slashes while typing, convert to DD MMM YYYY on blur
-  document.getElementById('birthday').addEventListener('input', fmtBirthday);
-  document.getElementById('birthday').addEventListener('blur',  convertBirthdayOnBlur);
+  // Populate birthday day options (1–31)
+  const dayEl = document.getElementById('bdDay');
+  for (let d = 1; d <= 31; d++) {
+    const o = document.createElement('option');
+    o.value = o.textContent = String(d).padStart(2, '0');
+    dayEl.appendChild(o);
+  }
+  // Populate birthday year options (current year down to 1940)
+  const yearEl = document.getElementById('bdYear');
+  const curYear = new Date().getFullYear();
+  for (let y = curYear; y >= 1940; y--) {
+    const o = document.createElement('option');
+    o.value = o.textContent = y;
+    yearEl.appendChild(o);
+  }
 
   // Drag-over styling on upload zone
   const zone = document.getElementById('upload-zone');
@@ -782,23 +828,13 @@ document.getElementById('fullName').addEventListener('input', function() {
   this._edited = this.value.trim() !== '';
 });
 
-// As-you-type: insert slashes → MM/DD/YYYY
-function fmtBirthday(e) {
-  let v = e.target.value.replace(/\D/g, '').slice(0, 8);
-  if (v.length >= 3) v = v.slice(0, 2) + '/' + v.slice(2);
-  if (v.length >= 6) v = v.slice(0, 5) + '/' + v.slice(5);
-  e.target.value = v;
-}
-
-// On blur: convert MM/DD/YYYY → DD MMM YYYY
-function convertBirthdayOnBlur(e) {
-  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const m = e.target.value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (!m) return;
-  const month = parseInt(m[1], 10);
-  const day   = parseInt(m[2], 10);
-  if (month < 1 || month > 12) return;
-  e.target.value = String(day).padStart(2, '0') + ' ' + MONTHS[month - 1] + ' ' + m[3];
+// Combine birthday dropdowns → "DD MMM YYYY"
+function getBirthday() {
+  const d = document.getElementById('bdDay').value;
+  const m = document.getElementById('bdMonth').value;
+  const y = document.getElementById('bdYear').value;
+  if (!d || !m || !y) return '';
+  return d + ' ' + m + ' ' + y;
 }
 
 // ── Progress bar ──────────────────────────────────────────────────────────────
@@ -910,8 +946,7 @@ function validateStep(step) {
   if (step === 1) {
     if (!req('firstName')) return 'First name is required.';
     if (!req('surname'))   return 'Surname is required.';
-    const bd = req('birthday');
-    if (bd && !/^\d{1,2}\s+[A-Za-z]{3}\s+\d{4}$/.test(bd)) return 'Birthday must be in DD MMM YYYY format (e.g. 01 Mar 2002).';
+    if (!getBirthday()) return 'Please select a complete birthday (day, month, and year).';
   }
   if (step === 2) {
     if (!req('businessName'))   return 'Business name is required.';
@@ -974,6 +1009,37 @@ function clearLogo() {
   document.getElementById('upload-zone').style.display = '';
 }
 
+function handleHeadshotFile(file) {
+  if (!file) return;
+  if (!['image/jpeg','image/png'].includes(file.type)) {
+    showErr(5, 'Only JPG or PNG files are accepted for the headshot.');
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    showErr(5, 'Headshot file is too large. Maximum 10 MB.');
+    return;
+  }
+  clearErr(5);
+  compressImage(file, 800, 0.85, (base64, mime) => {
+    headshotBase64 = base64;
+    headshotMime   = mime;
+    const img = document.getElementById('headshot-preview-img');
+    img.src   = 'data:' + mime + ';base64,' + base64;
+    document.getElementById('headshot-file-name').textContent = file.name;
+    document.getElementById('headshot-upload-zone').style.display = 'none';
+    document.getElementById('headshot-preview').classList.add('visible');
+  });
+}
+
+function clearHeadshot() {
+  headshotBase64 = '';
+  headshotMime   = '';
+  document.getElementById('headshotFile').value = '';
+  document.getElementById('headshot-preview-img').src = '';
+  document.getElementById('headshot-preview').classList.remove('visible');
+  document.getElementById('headshot-upload-zone').style.display = '';
+}
+
 // Resize + compress image client-side using canvas
 function compressImage(file, maxDim, quality, cb) {
   const reader = new FileReader();
@@ -1005,7 +1071,7 @@ function buildReview() {
     ['First / Preferred Name', g('firstName')],
     ['Surname',                g('surname')],
     ['Full Name',              g('fullName')],
-    ['Birthday',               g('birthday')],
+    ['Birthday',               getBirthday()],
     ['Sponsored By',           g('sponsoredBy')],
     ['Business Name',          g('businessName')],
     ['Industry',               g('industry')],
@@ -1022,7 +1088,8 @@ function buildReview() {
     ['Google Drive Email',     g('driveEmail')],
     ['Google Calendar Email',  g('calendarEmail')],
     ['Next of Kin Contact',    g('nextOfKin')],
-    ['Company Logo',           logoBase64 ? '✓ Image attached' : '— not uploaded —'],
+    ['Company Logo',           logoBase64      ? '✓ Image attached' : '— not uploaded —'],
+    ['Corporate Headshot',     headshotBase64  ? '✓ Image attached' : '— not uploaded —'],
   ];
 
   const el = document.getElementById('review-content');
@@ -1047,7 +1114,7 @@ async function submitForm() {
     fullName:        g('fullName')       || (g('firstName') + ' ' + g('surname')).trim(),
     firstName:       g('firstName'),
     surname:         g('surname'),
-    birthday:        g('birthday'),
+    birthday:        getBirthday(),
     sponsoredBy:     g('sponsoredBy'),
     industry:        g('industry'),
     tradeCategory:   g('tradeCategory'),
@@ -1066,6 +1133,8 @@ async function submitForm() {
     otherSocial:     g('otherSocial'),
     logoBase64:      logoBase64,
     logoMime:        logoMime,
+    headshotBase64:  headshotBase64,
+    headshotMime:    headshotMime,
   };
 
   try {
