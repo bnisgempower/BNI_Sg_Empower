@@ -806,7 +806,7 @@ let ptLoaded     = false;   // whether power teams have been fetched yet
     yearEl.appendChild(o);
   }
 
-  // Drag-over styling on upload zone
+  // Drag-and-drop for logo
   const zone = document.getElementById('upload-zone');
   zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
   zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
@@ -815,6 +815,17 @@ let ptLoaded     = false;   // whether power teams have been fetched yet
     zone.classList.remove('drag-over');
     const f = e.dataTransfer.files[0];
     if (f) handleLogoFile(f);
+  });
+
+  // Drag-and-drop for headshot
+  const hsZone = document.getElementById('headshot-upload-zone');
+  hsZone.addEventListener('dragover',  e => { e.preventDefault(); hsZone.classList.add('drag-over'); });
+  hsZone.addEventListener('dragleave', () => hsZone.classList.remove('drag-over'));
+  hsZone.addEventListener('drop', e => {
+    e.preventDefault();
+    hsZone.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (f) handleHeadshotFile(f);
   });
 })();
 
