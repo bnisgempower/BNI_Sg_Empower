@@ -542,8 +542,9 @@
 
       <div class="field">
         <label>Sponsored By</label>
-        <input type="text" id="sponsoredBy" placeholder="BNI member who invited you" list="roster-list">
-        <datalist id="roster-list"></datalist>
+        <select id="sponsoredBy">
+          <option value="">— None / Not applicable —</option>
+        </select>
       </div>
     </div>
     <div id="err-1" class="error-banner"></div>
@@ -777,12 +778,16 @@ let ptLoaded     = false;   // whether power teams have been fetched yet
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 (async function init() {
-  // Populate datalist for sponsored-by field from live roster
-  const dl = document.getElementById('roster-list');
+  // Populate Sponsored By dropdown from live roster
+  const sponsorSel = document.getElementById('sponsoredBy');
   try {
     const res  = await fetch(APPS_SCRIPT_URL + '?action=getRoster');
     const json = await res.json();
-    (json.members || []).forEach(n => { const o = document.createElement('option'); o.value = n; dl.appendChild(o); });
+    (json.members || []).forEach(n => {
+      const o = document.createElement('option');
+      o.value = o.textContent = n;
+      sponsorSel.appendChild(o);
+    });
   } catch (_) {};
 
   // Auto-fill Full Name when first/surname change
