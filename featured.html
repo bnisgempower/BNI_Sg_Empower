@@ -33,6 +33,15 @@
       font-size:13px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--gold-bright);
       display:flex;justify-content:space-between;align-items:center}
     .card-head .opt{font-size:10px;color:var(--text-muted);font-weight:600;letter-spacing:.3px}
+    /* P2 on/off toggle */
+    .p2sw{display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:12px;font-weight:600;color:var(--text-muted);cursor:pointer}
+    .p2sw input{position:absolute;opacity:0;width:0;height:0}
+    .p2sw .track{width:40px;height:22px;border-radius:22px;background:var(--surface2);border:1px solid var(--border);position:relative;transition:var(--tr);flex:none}
+    .p2sw .track::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--text-dim);transition:var(--tr)}
+    .p2sw input:checked + .track{background:var(--gold);border-color:var(--gold)}
+    .p2sw input:checked + .track::after{transform:translateX(18px);background:#000}
+    .card.off{opacity:.5}
+    .card.off .rows{pointer-events:none}
     .rows{padding:14px 14px;display:flex;flex-direction:column;gap:14px}
     .fld{display:flex;flex-direction:column;gap:5px}
     .fld label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;padding-left:2px}
@@ -83,8 +92,9 @@
       </div>
     </section>
 
-    <section class="card" id="card2" style="display:none">
-      <div class="card-head">Featured presenter 2 <span class="opt">OPTIONAL</span></div>
+    <section class="card off" id="card2" style="display:none">
+      <div class="card-head">Featured presenter 2
+        <label class="p2sw"><input type="checkbox" id="p2on"><span class="track"></span><span id="p2lbl">Off</span></label></div>
       <div class="rows">
         <div class="fld"><label>Presenter</label>
           <select class="inp r-member" id="member2"><option value="">— none —</option></select></div>
@@ -96,7 +106,7 @@
     </section>
 
     <div class="msg err" id="err"></div>
-    <footer>Presenter 1 fills slide 108. A 2nd presenter gets an auto-added slide after presenter 1&rsquo;s deck.<br>To swap just the slides, leave the name &amp; topic blank and upload a new file — the presenter &amp; topic stay the same.<br>If you don&rsquo;t upload a file, last week&rsquo;s imported slides stay in place.</footer>
+    <footer>Presenter 1 fills slide 108. Turn on <b>Second presenter</b> to add a 2nd slide after presenter 1&rsquo;s deck; turn it off to remove presenter 2.<br>To swap just the slides, leave the name &amp; topic blank and upload a new file — the presenter &amp; topic stay the same.<br>If you don&rsquo;t upload a file, last week&rsquo;s imported slides stay in place.</footer>
   </main>
 
   <div class="savebar" id="savebar" style="display:none">
@@ -144,6 +154,18 @@
     return out;
   }
 
+  // Whether a 2nd presenter is currently in the deck (from the backend).
+  let hadP2 = false;
+
+  // Reflect the checkbox: enable/disable the P2 fields and update the label.
+  function syncP2(){
+    const on = $('p2on').checked;
+    $('card2').classList.toggle('off', !on);
+    ['member2','topic2','file2'].forEach(id => $(id).disabled = !on);
+    $('p2lbl').textContent = on ? 'On' : (hadP2 ? 'Off — will remove P2' : 'Off');
+  }
+  $('p2on').addEventListener('change', syncP2);
+
   // Load members into both dropdowns
   (async function init(){
     try{
@@ -151,7 +173,10 @@
       const members = res.members || [];
       const opts = members.map(n => `<option>${esc(n)}</option>`).join('');
       $('member1').innerHTML = '<option value="">— select member —</option>' + opts;
-      $('member2').innerHTML = '<option value="">— none —</option>' + opts;
+      $('member2').innerHTML = '<option value="">— keep current —</option>' + opts;
+      hadP2 = !!res.hasP2;
+      $('p2on').checked = hadP2;      // start ticked only if a P2 already exists
+      syncP2();
       $('loading').style.display = 'none';
       $('card1').style.display = 'block';
       $('card2').style.display = 'block';
@@ -176,10 +201,17 @@
     if(!pin){ showErr('Enter the MC PIN to update.'); return; }
 
     // Rows are index-aligned (row 1 = P1, row 2 = P2). Blank name+topic = keep.
+    const p2on = $('p2on').checked;
     const rows = [1,2].map(i => ({ i, member:$('member'+i).value.trim(), topic:$('topic'+i).value.trim(), file:$('file'+i).files[0] }));
-    if(!rows.some(r => r.member || r.topic || r.file)){ showErr('Pick a presenter or upload slides.'); return; }
-    for(const r of rows){ if(r.member && !r.topic){ showErr('Presenter '+r.i+' needs a topic (or leave the name blank to keep it).'); return; } }
-    if(rows[1].file && !rows[1].member){ showErr('Presenter 2 needs a name to attach slides to.'); return; }
+    if(!p2on) rows[1] = { i:2, member:'', topic:'', file:null };   // P2 off → ignore its inputs
+
+    const p1has = rows[0].member || rows[0].topic || rows[0].file;
+    if(!p1has && !p2on && !hadP2){ showErr('Pick a presenter or upload slides.'); return; }
+    if(rows[0].member && !rows[0].topic){ showErr('Presenter 1 needs a topic (or leave the name blank to keep it).'); return; }
+    if(p2on){
+      if(rows[1].member && !rows[1].topic){ showErr('Presenter 2 needs a topic (or leave the name blank to keep it).'); return; }
+      if(!rows[1].member && !hadP2){ showErr('Enter presenter 2’s name (there’s no existing 2nd presenter to keep).'); return; }
+    }
 
     const btn = $('save'); btn.disabled=true;
     const presenters = [];
@@ -197,7 +229,7 @@
     if(total > 45*1024*1024){ btn.disabled=false; btn.textContent='Update slides'; showErr('Uploads are too large combined — try lighter/smaller files.'); return; }
 
     btn.textContent = anyFile ? 'Importing slides…' : 'Updating…';
-    const payload = { formType:'saveFeatured', pin, presenters };
+    const payload = { formType:'saveFeatured', pin, presenters, presenter2Enabled: p2on };
     try{
       const res = await fetch(APPS_SCRIPT_URL, {method:'POST',
         headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload)});
@@ -221,10 +253,12 @@
 
   function done(json, presenters){
     const e=$('err');
+    const p2on = $('p2on').checked;
     const bits = [];
     bits.push((presenters[0] && presenters[0].member) ? esc(presenters[0].member) : 'presenter 1 (kept)');
-    if(presenters[1] && presenters[1].member) bits.push(esc(presenters[1].member));
+    if(p2on) bits.push((presenters[1] && presenters[1].member) ? esc(presenters[1].member) : 'presenter 2 (kept)');
     let m = '✓ Featured updated — ' + bits.join(' & ') + '.';
+    if(json.p2removed) m += ' Presenter 2 removed.';
     if(json.import){
       const ib=[];
       if(json.import.p1!=null) ib.push('P1: '+json.import.p1+' slide'+(json.import.p1===1?'':'s'));
@@ -236,6 +270,8 @@
     const note = (json.p1&&json.p1.photoNote) || (json.p2&&json.p2.photoNote);
     if(note) m += ' ⚠️ '+esc(note)+'.';
     e.innerHTML = m; e.className='msg ok show';
+    hadP2 = p2on;                       // deck now matches the checkbox
+    syncP2();
     const btn=$('save'); btn.disabled=false; btn.textContent='Update slides';
     $('file1').value=''; $('file2').value='';
     window.scrollTo({top:0,behavior:'smooth'});
