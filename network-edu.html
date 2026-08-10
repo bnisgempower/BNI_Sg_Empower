@@ -80,6 +80,11 @@
           <label>Presentation title</label>
           <input class="inp" id="title" placeholder="e.g. The VCP Framework" autocomplete="off">
         </div>
+        <div class="fld">
+          <label>Presenter slides — optional (.pptx)</label>
+          <input class="inp" id="pptx" type="file" accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation" style="padding:9px 10px">
+          <div style="font-size:11px;color:var(--text-muted);line-height:1.5;padding:2px 2px 0">Imported as real slides right after slide 26, replacing last week&rsquo;s. A big file can take a minute.</div>
+        </div>
       </div>
       <div class="preview" id="preview"></div>
     </section>
@@ -125,6 +130,15 @@
     }
   })();
 
+  function fileToB64(file){
+    return new Promise((resolve,reject)=>{
+      const r=new FileReader();
+      r.onload=()=>{ const s=String(r.result); const i=s.indexOf(','); resolve(i>=0?s.slice(i+1):s); };
+      r.onerror=()=>reject(new Error('read failed'));
+      r.readAsDataURL(file);
+    });
+  }
+
   // Save
   $('save').addEventListener('click', async ()=>{
     clearMsg();
@@ -135,8 +149,19 @@
     if(!title){ showErr('Type the presentation title.'); return; }
     if(!pin){ showErr('Enter the MC PIN to update.'); return; }
 
-    const btn = $('save'); btn.disabled=true; btn.textContent='Updating…';
+    const btn = $('save'); btn.disabled=true;
     const payload = { formType:'saveNetworkEdu', pin, member, title };
+
+    const file = $('pptx').files[0];
+    if(file){
+      if(!/\.pptx$/i.test(file.name)){ btn.disabled=false; showErr('Slides must be a .pptx file.'); return; }
+      if(file.size > 40*1024*1024){ btn.disabled=false; showErr('That .pptx is over 40MB — too large to import here.'); return; }
+      btn.textContent='Reading slides…';
+      try{ payload.pptxBase64 = await fileToB64(file); payload.pptxName = file.name.replace(/\.pptx$/i,''); }
+      catch(e){ btn.disabled=false; btn.textContent='Update slide 26'; showErr('Couldn’t read that file.'); return; }
+    }
+
+    btn.textContent = file ? 'Importing slides…' : 'Updating…';
     try{
       const res = await fetch(APPS_SCRIPT_URL, {method:'POST',
         headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload)});
@@ -144,7 +169,13 @@
       if(json.status==='error'){ throw new Error(json.message||'Update failed'); }
       done(json);
     }catch(err){
-      // Fallback: fire-and-forget (opaque) — the write still runs server-side.
+      if(file){
+        // Import is slow + shouldn't be blindly re-fired; don't auto-retry.
+        btn.disabled=false; btn.textContent='Update slide 26';
+        showErr('Sent, but no confirmation came back. The slide import may still be running — check the deck in a minute before retrying.');
+        return;
+      }
+      // Text-only: safe fire-and-forget fallback.
       try{
         await fetch(APPS_SCRIPT_URL, {method:'POST',mode:'no-cors',
           headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload)});
@@ -157,9 +188,12 @@
   function done(json){
     const e=$('err');
     let m = '✓ Slide 26 updated — ' + esc(json.member) + ' · ' + esc(json.title) + '.';
+    if(json.import && json.import.imported!=null) m += ' Imported ' + json.import.imported + ' slide' + (json.import.imported===1?'':'s') + ' after slide 26.';
+    if(json.import && json.import.error) m += ' ⚠️ Slides import: ' + esc(json.import.error) + '.';
     if(json.photoNote) m += ' ⚠️ ' + esc(json.photoNote) + '.';
     e.innerHTML = m; e.className='msg ok show';
     const btn=$('save'); btn.disabled=false; btn.textContent='Update slide 26';
+    $('pptx').value='';
     window.scrollTo({top:0,behavior:'smooth'});
   }
   </script>
