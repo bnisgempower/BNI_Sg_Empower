@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="theme-color" content="#c0392b">
+  <title>BNI Empower — Featured Presentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --gold:#c0392b; --gold-bright:#daa94d; --gold-dim:rgba(200,151,58,.12); --gold-border:rgba(200,151,58,.35);
+      --bg:#0d0d0d; --bg2:#141414; --surface:#1c1c1c; --surface2:#252525; --border:#2e2e2e;
+      --text:#f0ede8; --text-muted:#888; --text-dim:#4a4a4a; --success:#5cc976; --danger:#e05c5c;
+      --r-sm:8px; --r:14px; --r-lg:18px; --tr:200ms ease;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{-webkit-tap-highlight-color:transparent}
+    body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);
+      min-height:100dvh;display:flex;flex-direction:column;align-items:center;
+      padding-bottom:max(env(safe-area-inset-bottom),96px)}
+    .header{width:100%;background:var(--bg2);border-bottom:1px solid var(--border);
+      padding:16px 20px;display:flex;align-items:center;justify-content:center;gap:12px;
+      position:sticky;top:0;z-index:20}
+    .logo-mark{width:40px;height:40px;background:var(--gold);border-radius:10px;display:flex;
+      align-items:center;justify-content:center;font-weight:800;font-size:22px;color:#000;letter-spacing:-.5px}
+    .header-text h1{font-size:17px;font-weight:800;letter-spacing:-.2px}
+    .header-text p{font-size:12px;color:var(--text-muted)}
+    .container{width:100%;max-width:560px;padding:18px 14px 0;flex:1;display:flex;flex-direction:column;gap:16px}
+
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+    .card-head{padding:12px 16px;background:var(--bg2);border-bottom:1px solid var(--border);
+      font-size:13px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--gold-bright);
+      display:flex;justify-content:space-between;align-items:center}
+    .card-head .opt{font-size:10px;color:var(--text-muted);font-weight:600;letter-spacing:.3px}
+    .rows{padding:14px 14px;display:flex;flex-direction:column;gap:14px}
+    .fld{display:flex;flex-direction:column;gap:5px}
+    .fld label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;padding-left:2px}
+    .inp{width:100%;font-family:inherit;font-size:15px;color:var(--text);background:var(--surface);
+      border:1px solid var(--border);border-radius:var(--r-sm);padding:11px 12px}
+    .inp:focus{outline:none;border-color:var(--gold-border)}
+    select.inp{-webkit-appearance:none;appearance:none;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat:no-repeat;background-position:right 10px center;background-size:16px;padding-right:30px}
+    .hint{font-size:11px;color:var(--text-muted);line-height:1.5;padding:2px 2px 0}
+
+    .savebar{position:fixed;left:0;right:0;bottom:0;background:var(--bg2);border-top:1px solid var(--border);
+      padding:12px 14px max(env(safe-area-inset-bottom),12px);display:flex;gap:10px;align-items:center;z-index:30}
+    .savebar .pin{width:110px;font-family:inherit;font-size:16px;color:var(--text);background:var(--surface);
+      border:1px solid var(--border);border-radius:var(--r);padding:12px}
+    .savebar .btn{flex:1;font-family:inherit;font-size:16px;font-weight:800;color:#000;background:var(--gold);
+      border:none;border-radius:var(--r);padding:13px;cursor:pointer}
+    .savebar .btn:disabled{opacity:.5}
+    .savebar .btn:active{transform:scale(.99)}
+
+    .msg{width:100%;max-width:560px;font-size:13px;padding:10px 12px;border-radius:var(--r-sm);line-height:1.4;display:none;margin:0 14px}
+    .msg.show{display:block}
+    .msg.err{background:rgba(224,92,92,.12);border:1px solid rgba(224,92,92,.4);color:#f0a0a0}
+    .msg.ok{background:rgba(92,201,118,.12);border:1px solid rgba(92,201,118,.4);color:#a7e0b8}
+    .loading{color:var(--text-muted);text-align:center;padding:40px;font-size:14px}
+    footer{text-align:center;font-size:11px;color:var(--text-dim);padding:20px 16px 8px;line-height:1.5}
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="logo-mark">B</div>
+    <div class="header-text"><h1>Featured Presentation</h1><p>Slide 108 presenter(s)</p></div>
+  </header>
+
+  <main class="container" id="main">
+    <div class="loading" id="loading">Loading…</div>
+
+    <section class="card" id="card1" style="display:none">
+      <div class="card-head">Featured presenter 1</div>
+      <div class="rows">
+        <div class="fld"><label>Presenter</label>
+          <select class="inp r-member" id="member1"><option value="">— select member —</option></select></div>
+        <div class="fld"><label>Topic / line under the name</label>
+          <input class="inp r-topic" id="topic1" placeholder="e.g. Scaling a Family Business" autocomplete="off"></div>
+        <div class="fld"><label>Slides — optional (.pptx or .pdf)</label>
+          <input class="inp r-file" id="file1" type="file" accept=".pptx,.pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/pdf" style="padding:9px 10px">
+          <div class="hint">Inserted right after their intro slide. <b>.pptx</b> → editable; <b>.pdf</b> → one image per page.</div></div>
+      </div>
+    </section>
+
+    <section class="card" id="card2" style="display:none">
+      <div class="card-head">Featured presenter 2 <span class="opt">OPTIONAL</span></div>
+      <div class="rows">
+        <div class="fld"><label>Presenter</label>
+          <select class="inp r-member" id="member2"><option value="">— none —</option></select></div>
+        <div class="fld"><label>Topic / line under the name</label>
+          <input class="inp r-topic" id="topic2" placeholder="Leave blank if only one presenter" autocomplete="off"></div>
+        <div class="fld"><label>Slides — optional (.pptx or .pdf)</label>
+          <input class="inp r-file" id="file2" type="file" accept=".pptx,.pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/pdf" style="padding:9px 10px"></div>
+      </div>
+    </section>
+
+    <div class="msg err" id="err"></div>
+    <footer>Presenter 1 fills slide 108. A 2nd presenter gets an auto-added slide after presenter 1&rsquo;s deck.<br>Each week&rsquo;s upload replaces the previous one. The photo is pulled from the member&rsquo;s headshot in Drive.</footer>
+  </main>
+
+  <div class="savebar" id="savebar" style="display:none">
+    <input class="pin" id="pin" type="password" inputmode="numeric" placeholder="MC PIN">
+    <button class="btn" id="save">Update slides</button>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxYCpexo7cuQwYMpBwLtVn48hEQAoz1PQw17INXwZpXz-nh7foLB4-8Dhct2a7yNE8lMg/exec';
+  if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+
+  function showErr(m){ const e=$('err'); e.textContent=m; e.className='msg err show'; }
+  function clearMsg(){ $('err').className='msg err'; }
+
+  function fileToB64(file){
+    return new Promise((resolve,reject)=>{
+      const r=new FileReader();
+      r.onload=()=>{ const s=String(r.result); const i=s.indexOf(','); resolve(i>=0?s.slice(i+1):s); };
+      r.onerror=()=>reject(new Error('read failed'));
+      r.readAsDataURL(file);
+    });
+  }
+  async function pdfToPageImages(file, onProgress){
+    if(!window.pdfjsLib) throw new Error('PDF renderer not loaded — check your connection.');
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({data:buf}).promise;
+    const out = [];
+    for(let p=1; p<=pdf.numPages; p++){
+      const page = await pdf.getPage(p);
+      const base = page.getViewport({scale:1});
+      const scale = Math.min(2, 1500 / base.width);
+      const vp = page.getViewport({scale});
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.ceil(vp.width); canvas.height = Math.ceil(vp.height);
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
+      await page.render({canvasContext:ctx, viewport:vp}).promise;
+      const d = canvas.toDataURL('image/png');
+      out.push(d.slice(d.indexOf(',')+1));
+      if(onProgress) onProgress(p, pdf.numPages);
+    }
+    return out;
+  }
+
+  // Load members into both dropdowns
+  (async function init(){
+    try{
+      const res = await fetch(APPS_SCRIPT_URL+'?action=getFeaturedOptions', {cache:'no-store'}).then(r=>r.json());
+      const members = res.members || [];
+      const opts = members.map(n => `<option>${esc(n)}</option>`).join('');
+      $('member1').innerHTML = '<option value="">— select member —</option>' + opts;
+      $('member2').innerHTML = '<option value="">— none —</option>' + opts;
+      $('loading').style.display = 'none';
+      $('card1').style.display = 'block';
+      $('card2').style.display = 'block';
+      $('savebar').style.display = 'flex';
+    }catch(e){
+      $('loading').textContent = 'Couldn’t load. Pull to refresh.';
+    }
+  })();
+
+  // Read one presenter's file into the payload object (pptx or pdf).
+  async function attachFile(file, obj, setStatus){
+    const isPptx = /\.pptx$/i.test(file.name), isPdf = /\.pdf$/i.test(file.name);
+    if(!isPptx && !isPdf) throw new Error('slides must be .pptx or .pdf');
+    if(file.size > 60*1024*1024) throw new Error('that file is over 60MB');
+    if(isPptx){ setStatus('Reading slides…'); obj.pptxBase64 = await fileToB64(file); obj.pptxName = file.name.replace(/\.pptx$/i,''); }
+    else { obj.pdfPages = await pdfToPageImages(file, (p,n)=>setStatus('Rendering PDF… '+p+'/'+n)); obj.pdfName = file.name.replace(/\.pdf$/i,''); }
+  }
+
+  $('save').addEventListener('click', async ()=>{
+    clearMsg();
+    const pin = $('pin').value.trim();
+    if(!pin){ showErr('Enter the MC PIN to update.'); return; }
+
+    // Gather up to 2 presenters (in order)
+    const raw = [1,2].map(i => ({ i, member:$('member'+i).value.trim(), topic:$('topic'+i).value.trim(), file:$('file'+i).files[0] }))
+                     .filter(r => r.member);
+    if(!raw.length){ showErr('Select at least presenter 1.'); return; }
+    if(raw.some(r => !r.topic)){ showErr('Each selected presenter needs a topic/line.'); return; }
+
+    const btn = $('save'); btn.disabled=true;
+    const presenters = [];
+    let anyFile = false;
+    try{
+      for(const r of raw){
+        const obj = { member:r.member, topic:r.topic };
+        if(r.file){ anyFile = true; await attachFile(r.file, obj, s=>btn.textContent='P'+r.i+': '+s); }
+        presenters.push(obj);
+      }
+    }catch(e){ btn.disabled=false; btn.textContent='Update slides'; showErr('Couldn’t read a file: '+e.message); return; }
+
+    // size guard on total pdf payload
+    const total = presenters.reduce((a,p)=> a + (p.pdfPages? p.pdfPages.reduce((x,s)=>x+s.length,0):0) + (p.pptxBase64? p.pptxBase64.length:0), 0);
+    if(total > 45*1024*1024){ btn.disabled=false; btn.textContent='Update slides'; showErr('Uploads are too large combined — try lighter/smaller files.'); return; }
+
+    btn.textContent = anyFile ? 'Importing slides…' : 'Updating…';
+    const payload = { formType:'saveFeatured', pin, presenters };
+    try{
+      const res = await fetch(APPS_SCRIPT_URL, {method:'POST',
+        headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload)});
+      const json = await res.json();
+      if(json.status==='error'){ throw new Error(json.message||'Update failed'); }
+      done(json, presenters);
+    }catch(err){
+      if(anyFile){
+        btn.disabled=false; btn.textContent='Update slides';
+        showErr('Sent, but no confirmation came back. The import may still be running — check the deck in a minute before retrying.');
+        return;
+      }
+      try{
+        await fetch(APPS_SCRIPT_URL, {method:'POST',mode:'no-cors',
+          headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload)});
+        await new Promise(r=>setTimeout(r,1200));
+        done({}, presenters);
+      }catch(e2){ btn.disabled=false; btn.textContent='Update slides'; showErr('Network error — please try again.'); }
+    }
+  });
+
+  function done(json, presenters){
+    const e=$('err');
+    let m = '✓ Featured updated — ' + presenters.map(p=>esc(p.member)).join(' & ') + '.';
+    if(json.import){
+      const bits=[];
+      if(json.import.p1!=null) bits.push('P1: '+json.import.p1+' slide'+(json.import.p1===1?'':'s'));
+      if(json.import.p2!=null) bits.push('P2: '+json.import.p2+' slide'+(json.import.p2===1?'':'s'));
+      if(bits.length) m += ' Imported ' + bits.join(', ') + '.';
+      if(json.import.p1err) m += ' ⚠️ P1 import: '+esc(json.import.p1err)+'.';
+      if(json.import.p2err) m += ' ⚠️ P2 import: '+esc(json.import.p2err)+'.';
+    }
+    const note = (json.p1&&json.p1.photoNote) || (json.p2&&json.p2.photoNote);
+    if(note) m += ' ⚠️ '+esc(note)+'.';
+    e.innerHTML = m; e.className='msg ok show';
+    const btn=$('save'); btn.disabled=false; btn.textContent='Update slides';
+    $('file1').value=''; $('file2').value='';
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  </script>
+</body>
+</html>
