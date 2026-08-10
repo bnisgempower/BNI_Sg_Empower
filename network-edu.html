@@ -89,7 +89,7 @@
       <div class="preview" id="preview"></div>
     </section>
     <div class="msg err" id="err"></div>
-    <footer>Updates slide 26 straight away — name, trade, the title, and the photo.<br>The photo is pulled from the member&rsquo;s headshot in Drive.</footer>
+    <footer>Updates slide 26 straight away — name, trade, the title, and the photo.<br>To swap just the slides, leave the name &amp; title blank and upload a new file — the presenter &amp; title stay the same.</footer>
   </main>
 
   <div class="savebar" id="savebar" style="display:none">
@@ -170,9 +170,10 @@
     const pin = $('pin').value.trim();
     const member = $('member').value.trim();
     const title = $('title').value.trim();
-    if(!member){ showErr('Select the presenter.'); return; }
-    if(!title){ showErr('Type the presentation title.'); return; }
+    const hasFile = !!$('pptx').files[0];
     if(!pin){ showErr('Enter the MC PIN to update.'); return; }
+    if(!member && !title && !hasFile){ showErr('Pick a presenter, type a title, or upload slides.'); return; }
+    if(member && !title){ showErr('Type the title (or leave the name blank to keep it).'); return; }
 
     const btn = $('save'); btn.disabled=true;
     const payload = { formType:'saveNetworkEdu', pin, member, title };
@@ -222,7 +223,9 @@
 
   function done(json){
     const e=$('err');
-    let m = '✓ Slide 26 updated — ' + esc(json.member) + ' · ' + esc(json.title) + '.';
+    const who  = json.member ? esc(json.member) : 'presenter (kept)';
+    const what = json.title  ? esc(json.title)  : 'title (kept)';
+    let m = '✓ Slide 26 updated — ' + who + ' · ' + what + '.';
     if(json.import && json.import.imported!=null) m += ' Imported ' + json.import.imported + ' slide' + (json.import.imported===1?'':'s') + ' after slide 26.';
     if(json.import && json.import.error) m += ' ⚠️ Slides import: ' + esc(json.import.error) + '.';
     if(json.photoNote) m += ' ⚠️ ' + esc(json.photoNote) + '.';
