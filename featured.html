@@ -96,7 +96,7 @@
     </section>
 
     <div class="msg err" id="err"></div>
-    <footer>Presenter 1 fills slide 108. A 2nd presenter gets an auto-added slide after presenter 1&rsquo;s deck.<br>Each week&rsquo;s upload replaces the previous one. The photo is pulled from the member&rsquo;s headshot in Drive.</footer>
+    <footer>Presenter 1 fills slide 108. A 2nd presenter gets an auto-added slide after presenter 1&rsquo;s deck.<br>To swap just the slides, leave the name &amp; topic blank and upload a new file — the presenter &amp; topic stay the same.</footer>
   </main>
 
   <div class="savebar" id="savebar" style="display:none">
@@ -175,20 +175,20 @@
     const pin = $('pin').value.trim();
     if(!pin){ showErr('Enter the MC PIN to update.'); return; }
 
-    // Gather up to 2 presenters (in order)
-    const raw = [1,2].map(i => ({ i, member:$('member'+i).value.trim(), topic:$('topic'+i).value.trim(), file:$('file'+i).files[0] }))
-                     .filter(r => r.member);
-    if(!raw.length){ showErr('Select at least presenter 1.'); return; }
-    if(raw.some(r => !r.topic)){ showErr('Each selected presenter needs a topic/line.'); return; }
+    // Rows are index-aligned (row 1 = P1, row 2 = P2). Blank name+topic = keep.
+    const rows = [1,2].map(i => ({ i, member:$('member'+i).value.trim(), topic:$('topic'+i).value.trim(), file:$('file'+i).files[0] }));
+    if(!rows.some(r => r.member || r.topic || r.file)){ showErr('Pick a presenter or upload slides.'); return; }
+    for(const r of rows){ if(r.member && !r.topic){ showErr('Presenter '+r.i+' needs a topic (or leave the name blank to keep it).'); return; } }
+    if(rows[1].file && !rows[1].member){ showErr('Presenter 2 needs a name to attach slides to.'); return; }
 
     const btn = $('save'); btn.disabled=true;
     const presenters = [];
     let anyFile = false;
     try{
-      for(const r of raw){
+      for(const r of rows){
         const obj = { member:r.member, topic:r.topic };
         if(r.file){ anyFile = true; await attachFile(r.file, obj, s=>btn.textContent='P'+r.i+': '+s); }
-        presenters.push(obj);
+        presenters.push(obj);   // push both rows to keep index alignment
       }
     }catch(e){ btn.disabled=false; btn.textContent='Update slides'; showErr('Couldn’t read a file: '+e.message); return; }
 
@@ -221,12 +221,15 @@
 
   function done(json, presenters){
     const e=$('err');
-    let m = '✓ Featured updated — ' + presenters.map(p=>esc(p.member)).join(' & ') + '.';
+    const bits = [];
+    bits.push((presenters[0] && presenters[0].member) ? esc(presenters[0].member) : 'presenter 1 (kept)');
+    if(presenters[1] && presenters[1].member) bits.push(esc(presenters[1].member));
+    let m = '✓ Featured updated — ' + bits.join(' & ') + '.';
     if(json.import){
-      const bits=[];
-      if(json.import.p1!=null) bits.push('P1: '+json.import.p1+' slide'+(json.import.p1===1?'':'s'));
-      if(json.import.p2!=null) bits.push('P2: '+json.import.p2+' slide'+(json.import.p2===1?'':'s'));
-      if(bits.length) m += ' Imported ' + bits.join(', ') + '.';
+      const ib=[];
+      if(json.import.p1!=null) ib.push('P1: '+json.import.p1+' slide'+(json.import.p1===1?'':'s'));
+      if(json.import.p2!=null) ib.push('P2: '+json.import.p2+' slide'+(json.import.p2===1?'':'s'));
+      if(ib.length) m += ' Imported ' + ib.join(', ') + '.';
       if(json.import.p1err) m += ' ⚠️ P1 import: '+esc(json.import.p1err)+'.';
       if(json.import.p2err) m += ' ⚠️ P2 import: '+esc(json.import.p2err)+'.';
     }
