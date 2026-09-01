@@ -157,7 +157,7 @@
       const ctx = canvas.getContext('2d');
       ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);   // flatten transparency to white
       await page.render({canvasContext:ctx, viewport:vp}).promise;
-      const d = canvas.toDataURL('image/png');
+      const d = canvas.toDataURL('image/jpeg', 0.82);   // JPEG ≈ 5–10× smaller than PNG for slides
       out.push(d.slice(d.indexOf(',')+1));
       if(onProgress) onProgress(p, pdf.numPages);
     }
@@ -192,7 +192,7 @@
           payload.pdfPages = await pdfToPageImages(file, (p,n)=>{ btn.textContent='Rendering PDF… '+p+'/'+n; });
           payload.pdfName = file.name.replace(/\.pdf$/i,'');
           const total = payload.pdfPages.reduce((a,s)=>a+s.length,0);
-          if(total > 45*1024*1024){ btn.disabled=false; btn.textContent='Update slide 26'; showErr('That PDF is too large after rendering — try a lighter/smaller PDF.'); return; }
+          if(total > 48*1024*1024){ btn.disabled=false; btn.textContent='Update slide 26'; showErr('That PDF is still too large after rendering — the server can’t accept it in one go. Split it or use a lighter PDF.'); return; }
         }
       }catch(e){ btn.disabled=false; btn.textContent='Update slide 26'; showErr('Couldn’t read that file: '+e.message); return; }
     }

@@ -147,7 +147,7 @@
       const ctx = canvas.getContext('2d');
       ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
       await page.render({canvasContext:ctx, viewport:vp}).promise;
-      const d = canvas.toDataURL('image/png');
+      const d = canvas.toDataURL('image/jpeg', 0.82);   // JPEG ≈ 5–10× smaller than PNG for slides
       out.push(d.slice(d.indexOf(',')+1));
       if(onProgress) onProgress(p, pdf.numPages);
     }
@@ -226,7 +226,7 @@
 
     // size guard on total pdf payload
     const total = presenters.reduce((a,p)=> a + (p.pdfPages? p.pdfPages.reduce((x,s)=>x+s.length,0):0) + (p.pptxBase64? p.pptxBase64.length:0), 0);
-    if(total > 45*1024*1024){ btn.disabled=false; btn.textContent='Update slides'; showErr('Uploads are too large combined — try lighter/smaller files.'); return; }
+    if(total > 48*1024*1024){ btn.disabled=false; btn.textContent='Update slides'; showErr('Uploads are still too large combined — the server can’t accept them in one go. Send one presenter at a time, or use lighter files.'); return; }
 
     btn.textContent = anyFile ? 'Importing slides…' : 'Updating…';
     const payload = { formType:'saveFeatured', pin, presenters, presenter2Enabled: p2on };
