@@ -228,6 +228,34 @@
     .success-msg { color: var(--success); font-size: 14px; font-weight: 600; }
     .error-msg   { color: var(--danger);  font-size: 14px; font-weight: 600; }
 
+    /* ── Meeting-mode segmented switch ── */
+    .seg {
+      display: flex;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 4px;
+      gap: 4px;
+      position: relative;
+    }
+    .seg button {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px; font-weight: 700;
+      padding: 11px 8px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all var(--tr);
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+    }
+    .seg button.active { background: var(--gold); color: #000; }
+    .seg button:disabled { opacity: .55; cursor: wait; }
+    .meeting-date { font-size: 12px; color: var(--text-muted); margin-top: 10px; text-align: center; }
+    .meeting-date b { color: var(--text); }
+
     [hidden] { display: none !important; }
   </style>
 </head>
@@ -261,6 +289,22 @@
       <button class="logout-btn" onclick="logout()">Sign out</button>
     </div>
 
+    <!-- Meeting mode -->
+    <div class="action-card">
+      <div class="action-card-head" style="margin-bottom:14px;">
+        <div>
+          <div class="action-card-title">📽 Meeting Mode</div>
+          <div class="action-card-sub">Switches slides &amp; sets slide 1's date</div>
+        </div>
+      </div>
+      <div class="seg" id="segMode">
+        <button id="segPhysical" onclick="setMeeting('physical')">🏢 Physical</button>
+        <button id="segOnline"   onclick="setMeeting('online')">💻 Online</button>
+      </div>
+      <div class="meeting-date" id="meetingDate"></div>
+      <div class="result-area" id="resMode"></div>
+    </div>
+
     <!-- Missing submissions -->
     <div class="action-card">
       <div class="action-card-head">
@@ -283,18 +327,6 @@
         <button class="action-btn" id="btnAttendance" onclick="loadAttendance()">Check</button>
       </div>
       <div class="result-area" id="resAttendance"></div>
-    </div>
-
-    <!-- Highlight duplicates -->
-    <div class="action-card">
-      <div class="action-card-head">
-        <div>
-          <div class="action-card-title">🎨 Highlight Duplicates</div>
-          <div class="action-card-sub">Marks members with more than one submission</div>
-        </div>
-        <button class="action-btn" id="btnHighlight" onclick="doHighlight()">Run</button>
-      </div>
-      <div class="result-area" id="resHighlight"></div>
     </div>
 
     <!-- Clear submissions -->
@@ -331,6 +363,7 @@ function submitPin() {
   if (pin === ADMIN_PIN) {
     document.getElementById('vPin').hidden = true;
     document.getElementById('vDash').hidden = false;
+    loadMeetingMode();
   } else {
     document.getElementById('pinErr').textContent = 'Incorrect PIN';
     document.getElementById('pinInput').value = '';
@@ -354,6 +387,50 @@ async function callAction(action, params = {}) {
   const qs  = new URLSearchParams({ action, ...params }).toString();
   const res = await fetch(APPS_SCRIPT_URL + '?' + qs);
   return res.json();
+}
+
+// ── Meeting mode (Physical / Online) ─────────────────
+function paintMode(mode) {
+  document.getElementById('segPhysical').classList.toggle('active', mode === 'physical');
+  document.getElementById('segOnline').classList.toggle('active',   mode === 'online');
+}
+function setSegBusy(busy) {
+  document.getElementById('segPhysical').disabled = busy;
+  document.getElementById('segOnline').disabled   = busy;
+}
+
+async function loadMeetingMode() {
+  const dateEl = document.getElementById('meetingDate');
+  dateEl.innerHTML = '<span class="spinner-sm"></span>Loading current mode…';
+  try {
+    const data = await callAction('getMeetingMode');
+    paintMode(data.mode);
+    dateEl.innerHTML = 'Currently <b>' + (data.mode === 'online' ? 'Online' : 'Physical') + '</b>. Tap to switch.';
+  } catch {
+    dateEl.textContent = 'Couldn’t read current mode — tap a button to set it.';
+  }
+}
+
+async function setMeeting(mode) {
+  const res = document.getElementById('resMode');
+  const dateEl = document.getElementById('meetingDate');
+  setSegBusy(true);
+  paintMode(mode);                       // optimistic
+  res.classList.add('show');
+  res.innerHTML = '<div style="font-size:13px;color:var(--text-muted);"><span class="spinner-sm"></span>Updating slides…</div>';
+  try {
+    const data = await callAction('setMeetingMode', { pin: ADMIN_PIN, mode });
+    if (data.status === 'error') throw new Error(data.message || 'failed');
+    paintMode(data.mode);
+    dateEl.innerHTML = 'Currently <b>' + (data.mode === 'online' ? 'Online' : 'Physical') + '</b>. Tap to switch.';
+    const n = (data.changed || []).length;
+    res.innerHTML = '<div class="success-msg">✅ ' + (data.mode === 'online' ? 'Online' : 'Physical') +
+      ' meeting set — ' + n + ' slide' + (n === 1 ? '' : 's') + ' changed. Slide 1 date: ' + (data.date || '—') + '.</div>';
+  } catch (e) {
+    res.innerHTML = '<div class="error-msg">Failed — ' + (e.message || 'check connection') + '</div>';
+    loadMeetingMode();                   // re-sync to the real state
+  }
+  setSegBusy(false);
 }
 
 // ── Missing submissions ──────────────────────────────
@@ -465,32 +542,6 @@ async function loadAttendance() {
 
   btn.disabled = false;
   btn.textContent = 'Refresh';
-}
-
-// ── Highlight duplicates ─────────────────────────────
-async function doHighlight() {
-  const btn = document.getElementById('btnHighlight');
-  const res = document.getElementById('resHighlight');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner-sm"></span>';
-  res.classList.add('show');
-  res.innerHTML = '';
-
-  try {
-    const data = await callAction('highlightDuplicates', { pin: ADMIN_PIN });
-    if (data.highlighted) {
-      res.innerHTML = data.duplicateMembers > 0
-        ? `<div class="error-msg">⚠️ ${data.duplicateMembers} member${data.duplicateMembers !== 1 ? 's have' : ' has'} duplicate submissions — highlighted in orange in the sheet.</div>`
-        : '<div class="success-msg">✅ No duplicates found.</div>';
-    } else {
-      res.innerHTML = '<div class="error-msg">Failed — ' + (data.message || 'unknown error') + '</div>';
-    }
-  } catch {
-    res.innerHTML = '<div class="error-msg">Failed — check connection.</div>';
-  }
-
-  btn.disabled = false;
-  btn.textContent = 'Run';
 }
 
 // ── Clear submissions ────────────────────────────────
