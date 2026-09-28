@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="theme-color" content="#c0392b">
+  <title>BNI Empower — Announcements</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --gold:#c0392b; --gold-bright:#daa94d; --bg:#0d0d0d; --bg2:#141414; --surface:#1c1c1c; --surface2:#252525;
+      --border:#2e2e2e; --text:#f0ede8; --text-muted:#888; --text-dim:#4a4a4a; --success:#5cc976; --danger:#e05c5c;
+      --r-sm:8px; --r:14px; --r-lg:18px; --tr:180ms ease;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{-webkit-tap-highlight-color:transparent}
+    body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);
+      min-height:100dvh;display:flex;flex-direction:column;align-items:center;padding-bottom:max(env(safe-area-inset-bottom),96px)}
+    .header{width:100%;background:var(--bg2);border-bottom:1px solid var(--border);padding:16px 20px;
+      display:flex;align-items:center;justify-content:center;gap:12px;position:sticky;top:0;z-index:20}
+    .logo-mark{width:40px;height:40px;background:var(--gold);border-radius:10px;display:flex;align-items:center;
+      justify-content:center;font-weight:800;font-size:22px;color:#000}
+    .header-text h1{font-size:17px;font-weight:800}
+    .header-text p{font-size:12px;color:var(--text-muted)}
+    .container{width:100%;max-width:600px;padding:16px 14px 0;flex:1;display:flex;flex-direction:column;gap:16px}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+    .card-head{padding:12px 16px;background:var(--bg2);border-bottom:1px solid var(--border);font-size:13px;
+      font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--gold-bright);display:flex;justify-content:space-between;align-items:center}
+    .card-head .n{font-size:11px;color:var(--text-muted);font-weight:600}
+    .body{padding:12px 12px;display:flex;flex-direction:column;gap:12px}
+    label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;display:block;margin-bottom:4px;padding-left:2px}
+    .inp{width:100%;font-family:inherit;font-size:15px;color:var(--text);background:var(--surface);
+      border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 11px}
+    .inp:focus{outline:none;border-color:var(--gold)}
+    .inp.sm{font-size:14px;padding:8px 10px}
+    .rowcard{border:1px solid var(--border);border-radius:var(--r);padding:11px;background:var(--surface2);display:flex;flex-direction:column;gap:9px;position:relative}
+    .rowcard .top{display:flex;gap:8px;align-items:flex-start}
+    .rowcard .top .grow{flex:1}
+    .rm{flex:none;width:30px;height:30px;border-radius:8px;border:1px solid rgba(224,92,92,.4);background:rgba(224,92,92,.1);
+      color:var(--danger);font-size:18px;line-height:1;cursor:pointer}
+    .grid3{display:grid;grid-template-columns:1fr 1.2fr;gap:8px}
+    .link-row{display:flex;gap:7px}
+    .link-row .inp{flex:1}
+    .btn-sm{flex:none;padding:0 14px;border-radius:var(--r-sm);border:1px solid var(--gold);background:transparent;
+      color:var(--gold-bright);font-family:inherit;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}
+    .btn-sm:active{transform:scale(.97)}
+    .status{font-size:11px;padding-left:2px;min-height:14px}
+    .status.ok{color:var(--success)} .status.err{color:var(--danger)} .status.wait{color:var(--text-muted)}
+    .add-btn{width:100%;padding:11px;border-radius:var(--r-sm);border:1px dashed var(--border);background:transparent;
+      color:var(--text-muted);font-family:inherit;font-weight:700;font-size:14px;cursor:pointer}
+    .add-btn:active{background:var(--surface2)}
+    .feed-filter{width:100%;font-size:14px;color:var(--text);background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--r-sm);padding:9px 11px;margin-bottom:4px}
+    .ev{display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid var(--border)}
+    .ev:last-child{border-bottom:none}
+    .ev .info{flex:1;min-width:0}
+    .ev .t{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .ev .m{font-size:12px;color:var(--text-muted)}
+    .ev .plus{flex:none;width:34px;height:34px;border-radius:8px;border:1px solid var(--gold);background:rgba(192,57,43,.12);
+      color:var(--gold-bright);font-size:20px;font-weight:700;cursor:pointer}
+    .savebar{position:fixed;left:0;right:0;bottom:0;background:var(--bg2);border-top:1px solid var(--border);
+      padding:12px 14px max(env(safe-area-inset-bottom),12px);display:flex;gap:10px;align-items:center;z-index:30}
+    .savebar .pin{width:104px;font-size:16px;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px}
+    .savebar .btn{flex:1;font-size:16px;font-weight:800;color:#000;background:var(--gold);border:none;border-radius:var(--r);padding:13px;cursor:pointer}
+    .savebar .btn:disabled{opacity:.5}
+    .msg{width:100%;max-width:600px;font-size:13px;padding:10px 12px;border-radius:var(--r-sm);line-height:1.4;display:none;margin:0 14px}
+    .msg.show{display:block}
+    .msg.err{background:rgba(224,92,92,.12);border:1px solid rgba(224,92,92,.4);color:#f0a0a0}
+    .msg.ok{background:rgba(92,201,118,.12);border:1px solid rgba(92,201,118,.4);color:#a7e0b8}
+    .loading{color:var(--text-muted);text-align:center;padding:40px;font-size:14px}
+    footer{text-align:center;font-size:11px;color:var(--text-dim);padding:18px 16px 8px;line-height:1.5}
+    .spin{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--gold-bright);border-radius:50%;
+      display:inline-block;vertical-align:middle;animation:sp .6s linear infinite}
+    @keyframes sp{to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="logo-mark">B</div>
+    <div class="header-text"><h1>Announcements</h1><p>Slide 127 events table</p></div>
+  </header>
+
+  <main class="container" id="main">
+    <div class="loading" id="loading">Loading events…</div>
+
+    <section class="card" id="rowsCard" style="display:none">
+      <div class="card-head">On the slide <span class="n" id="rowCount"></span></div>
+      <div class="body" id="rows"></div>
+      <div style="padding:0 12px 12px"><button class="add-btn" id="addBlank">+ Add a blank row</button></div>
+    </section>
+
+    <section class="card" id="feedCard" style="display:none">
+      <div class="card-head">Add from the BNI calendar</div>
+      <div class="body">
+        <input class="feed-filter" id="filter" placeholder="Filter events (e.g. Success, Visitor)…">
+        <div id="feed"></div>
+      </div>
+    </section>
+
+    <div class="msg err" id="err"></div>
+    <footer>Activity, date &amp; time come straight from the BNI Singapore calendar.<br>
+      For each row, paste the event&rsquo;s detail link and tap <b>Get</b> to auto-fill Location &amp; Seats Left — or type them.<br>
+      <b>Update</b> rewrites the slide-127 table to match these rows and stamps the time.</footer>
+  </main>
+
+  <div class="savebar" id="savebar" style="display:none">
+    <input class="pin" id="pin" type="password" inputmode="numeric" placeholder="MC PIN">
+    <button class="btn" id="save">Update slide</button>
+  </div>
+
+  <script>
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxYCpexo7cuQwYMpBwLtVn48hEQAoz1PQw17INXwZpXz-nh7foLB4-8Dhct2a7yNE8lMg/exec';
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  function showErr(m){ const e=$('err'); e.textContent=m; e.className='msg err show'; window.scrollTo({top:0,behavior:'smooth'}); }
+  function clearMsg(){ $('err').className='msg err'; }
+
+  let FEED = [];
+
+  async function callGet(action, params={}){
+    const qs = new URLSearchParams({action, ...params}).toString();
+    return fetch(APPS_SCRIPT_URL+'?'+qs, {cache:'no-store'}).then(r=>r.json());
+  }
+
+  // ── One editable slide row ──
+  function addRow(d){
+    d = d || {};
+    const card = document.createElement('div');
+    card.className = 'rowcard';
+    card.innerHTML =
+      '<div class="top">'+
+        '<div class="grow"><label>Training / Activity</label>'+
+        '<input class="inp f-act" value="'+esc(d.activity||'')+'" placeholder="e.g. Member Success Program"></div>'+
+        '<button class="rm" title="Remove row">&times;</button>'+
+      '</div>'+
+      '<div class="grid3">'+
+        '<div><label>Date</label><input class="inp sm f-date" value="'+esc(d.date||'')+'" placeholder="2 Oct"></div>'+
+        '<div><label>Time</label><input class="inp sm f-time" value="'+esc(d.time||'')+'" placeholder="1pm - 5pm"></div>'+
+      '</div>'+
+      '<div><label>Auto-fill from event link (optional)</label>'+
+        '<div class="link-row"><input class="inp sm f-link" placeholder="paste eventdetails?eventId=… link"><button class="btn-sm f-get">Get</button></div>'+
+        '<div class="status f-status"></div></div>'+
+      '<div class="grid3">'+
+        '<div><label>Location</label><input class="inp sm f-loc" value="'+esc(d.location||'')+'" placeholder="BNI Singapore HQ"></div>'+
+        '<div><label>No. of Seats Left</label><input class="inp sm f-seats" value="'+esc(d.seats||'')+'" placeholder="12 of 25"></div>'+
+      '</div>';
+    card.querySelector('.rm').addEventListener('click', ()=>{ card.remove(); renumber(); });
+    card.querySelector('.f-get').addEventListener('click', ()=>getSeats(card));
+    $('rows').appendChild(card);
+    renumber();
+    return card;
+  }
+  function renumber(){ const n=$('rows').children.length; $('rowCount').textContent = n+' row'+(n===1?'':'s'); }
+
+  async function getSeats(card){
+    const link = card.querySelector('.f-link').value.trim();
+    const st = card.querySelector('.f-status');
+    if(!link){ st.className='status err'; st.textContent='Paste the event link first.'; return; }
+    const btn = card.querySelector('.f-get'); btn.disabled=true;
+    st.className='status wait'; st.innerHTML='<span class="spin"></span> Reading seats…';
+    try{
+      const r = await callGet('getEventSeats', {url: link});
+      if(r.status==='error' || r.error){ st.className='status err'; st.textContent=(r.message||r.error||'Could not read that link.'); btn.disabled=false; return; }
+      if(r.location) card.querySelector('.f-loc').value = r.location;
+      if(r.seats)    card.querySelector('.f-seats').value = r.seats;
+      st.className='status ok';
+      st.textContent = '✓ ' + (r.registered!=null&&r.capacity!=null ? (r.registered+' registered of '+r.capacity+' → '+(r.seatsLeft)+' left') : 'filled');
+    }catch(e){ st.className='status err'; st.textContent='Network error — try again.'; }
+    btn.disabled=false;
+  }
+
+  // ── Calendar feed list ──
+  function renderFeed(){
+    const q = $('filter').value.trim().toLowerCase();
+    const list = FEED.filter(ev => !q || (ev.clean+' '+ev.title+' '+ev.date).toLowerCase().includes(q));
+    $('feed').innerHTML = list.length ? list.map((ev,i)=>
+      '<div class="ev" data-i="'+FEED.indexOf(ev)+'"><div class="info"><div class="t">'+esc(ev.clean||ev.title)+'</div>'+
+      '<div class="m">'+esc(ev.date)+' · '+esc(ev.time)+'</div></div>'+
+      '<button class="plus">+</button></div>'
+    ).join('') : '<div style="color:var(--text-muted);font-size:13px;padding:8px 6px">No upcoming events match.</div>';
+    $('feed').querySelectorAll('.ev').forEach(el=>{
+      el.querySelector('.plus').addEventListener('click', ()=>{
+        const ev = FEED[+el.dataset.i];
+        const card = addRow({ activity: ev.clean||ev.title, date: ev.date, time: ev.time, location:'BNI Singapore HQ' });
+        card.scrollIntoView({behavior:'smooth', block:'center'});
+        card.querySelector('.f-link').focus();
+      });
+    });
+  }
+
+  (async function init(){
+    try{
+      const res = await callGet('getAnnouncementsOptions');
+      FEED = res.events || [];
+      (res.current || []).forEach(r => addRow(r));
+      if(!(res.current||[]).length) addRow({location:'BNI Singapore HQ'});
+      renderFeed();
+      $('loading').style.display='none';
+      $('rowsCard').style.display='block';
+      $('feedCard').style.display='block';
+      $('savebar').style.display='flex';
+      if(res.tableFound===false) showErr('Heads up: the Announcements table wasn’t found on the slide — updating may not work until that’s checked.');
+    }catch(e){ $('loading').textContent='Couldn’t load. Pull to refresh.'; }
+  })();
+
+  $('addBlank').addEventListener('click', ()=>{ const c=addRow({location:'BNI Singapore HQ'}); c.scrollIntoView({behavior:'smooth',block:'center'}); });
+  $('filter').addEventListener('input', renderFeed);
+
+  function collect(){
+    return [...$('rows').children].map(card=>({
+      activity: card.querySelector('.f-act').value.trim(),
+      date:     card.querySelector('.f-date').value.trim(),
+      time:     card.querySelector('.f-time').value.trim(),
+      location: card.querySelector('.f-loc').value.trim(),
+      seats:    card.querySelector('.f-seats').value.trim(),
+    })).filter(r => r.activity||r.date||r.time||r.location||r.seats);
+  }
+
+  $('save').addEventListener('click', async ()=>{
+    clearMsg();
+    const pin = $('pin').value.trim();
+    if(!pin){ showErr('Enter the MC PIN to update.'); return; }
+    const rows = collect();
+    const btn = $('save'); btn.disabled=true; btn.textContent='Updating…';
+    const payload = { formType:'saveAnnouncements', pin, rows };
+    let json=null;
+    try{
+      const r = await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+      json = await r.json();
+    }catch(e){ json=null; }
+    if(json){
+      if(json.status==='error'){ btn.disabled=false; btn.textContent='Update slide'; showErr(json.message||'Update failed.'); return; }
+      const e=$('err'); e.textContent='✓ Slide updated — '+ (json.rows||rows.length) +' row'+((json.rows||rows.length)===1?'':'s')+'. '+(json.stamp||'');
+      e.className='msg ok show'; btn.disabled=false; btn.textContent='Update slide'; window.scrollTo({top:0,behavior:'smooth'}); return;
+    }
+    // no reply — small text payload, retry blind
+    try{
+      await fetch(APPS_SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+      await new Promise(r=>setTimeout(r,1200));
+      const e=$('err'); e.textContent='✓ Sent. Check the slide in a moment.'; e.className='msg ok show';
+    }catch(e2){ showErr('Network error — please try again.'); }
+    btn.disabled=false; btn.textContent='Update slide';
+  });
+  </script>
+</body>
+</html>
