@@ -230,25 +230,41 @@
 
     btn.textContent = anyFile ? 'Importing slides…' : 'Updating…';
     const payload = { formType:'saveFeatured', pin, presenters, presenter2Enabled: p2on };
+
+    // Separate a genuine network drop (no reply) from a server error (a reply
+    // that says something failed). The old code lumped both into one vague
+    // message, so real server errors were hidden.
+    let json = null;
     try{
-      const res = await fetch(APPS_SCRIPT_URL, {method:'POST',
+      const res  = await fetch(APPS_SCRIPT_URL, {method:'POST',
         headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload)});
-      const json = await res.json();
-      if(json.status==='error'){ throw new Error(json.message||'Update failed'); }
-      done(json, presenters);
-    }catch(err){
-      if(anyFile){
+      json = await res.json();
+    }catch(netErr){ json = null; }   // no parseable reply came back
+
+    if(json){
+      if(json.status==='error'){   // the server ran and reported a real problem
         btn.disabled=false; btn.textContent='Update slides';
-        showErr('Sent, but no confirmation came back. The import may still be running — check the deck in a minute before retrying.');
+        showErr(json.message || 'Update failed.');
         return;
       }
-      try{
-        await fetch(APPS_SCRIPT_URL, {method:'POST',mode:'no-cors',
-          headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload)});
-        await new Promise(r=>setTimeout(r,1200));
-        done({}, presenters);
-      }catch(e2){ btn.disabled=false; btn.textContent='Update slides'; showErr('Network error — please try again.'); }
+      done(json, presenters);
+      return;
     }
+
+    // No reply at all. For a file upload, the connection dropped before the
+    // import finished — never silently assume success.
+    if(anyFile){
+      btn.disabled=false; btn.textContent='Update slides';
+      showErr('The connection dropped before a reply came back — big uploads on a weak signal can do this. Keep the screen on and stay on this page while it works. Check the deck in a minute: if the slides aren’t there, tap Update slides again (ideally on a stronger Wi-Fi).');
+      return;
+    }
+    // No file → tiny request, safe to re-send blind and assume success.
+    try{
+      await fetch(APPS_SCRIPT_URL, {method:'POST',mode:'no-cors',
+        headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload)});
+      await new Promise(r=>setTimeout(r,1200));
+      done({}, presenters);
+    }catch(e2){ btn.disabled=false; btn.textContent='Update slides'; showErr('Network error — please try again.'); }
   });
 
   function done(json, presenters){

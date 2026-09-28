@@ -198,27 +198,40 @@
     }
 
     btn.textContent = file ? 'Importing slides…' : 'Updating…';
+
+    // Tell a genuine network drop (no reply) apart from a server error (a reply
+    // that says something failed), so real server errors aren't hidden.
+    let json = null;
     try{
-      const res = await fetch(APPS_SCRIPT_URL, {method:'POST',
+      const res  = await fetch(APPS_SCRIPT_URL, {method:'POST',
         headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload)});
-      const json = await res.json();
-      if(json.status==='error'){ throw new Error(json.message||'Update failed'); }
-      done(json);
-    }catch(err){
-      if(file){
-        // Import is slow + shouldn't be blindly re-fired; don't auto-retry.
+      json = await res.json();
+    }catch(netErr){ json = null; }
+
+    if(json){
+      if(json.status==='error'){
         btn.disabled=false; btn.textContent='Update slide 26';
-        showErr('Sent, but no confirmation came back. The slide import may still be running — check the deck in a minute before retrying.');
+        showErr(json.message || 'Update failed.');
         return;
       }
-      // Text-only: safe fire-and-forget fallback.
-      try{
-        await fetch(APPS_SCRIPT_URL, {method:'POST',mode:'no-cors',
-          headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload)});
-        await new Promise(r=>setTimeout(r,1200));
-        done({ member, title, photoNote:'' });
-      }catch(e2){ btn.disabled=false; btn.textContent='Update slide 26'; showErr('Network error — please try again.'); }
+      done(json);
+      return;
     }
+
+    // No reply at all. For a file upload the connection dropped before the
+    // import finished — never blindly assume success.
+    if(file){
+      btn.disabled=false; btn.textContent='Update slide 26';
+      showErr('The connection dropped before a reply came back — big uploads on a weak signal can do this. Keep the screen on and stay on this page while it works. Check the deck in a minute: if the slides aren’t there, tap Update again (ideally on a stronger Wi-Fi).');
+      return;
+    }
+    // Text-only: tiny request, safe to re-send blind and assume success.
+    try{
+      await fetch(APPS_SCRIPT_URL, {method:'POST',mode:'no-cors',
+        headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload)});
+      await new Promise(r=>setTimeout(r,1200));
+      done({ member, title, photoNote:'' });
+    }catch(e2){ btn.disabled=false; btn.textContent='Update slide 26'; showErr('Network error — please try again.'); }
   });
 
   function done(json){
