@@ -50,6 +50,10 @@
     .add-btn{width:100%;padding:11px;border-radius:var(--r-sm);border:1px dashed var(--border);background:transparent;
       color:var(--text-muted);font-family:inherit;font-weight:700;font-size:14px;cursor:pointer}
     .add-btn:active{background:var(--surface2)}
+    .open-site{display:block;text-align:center;text-decoration:none;padding:11px;border-radius:var(--r-sm);
+      border:1px solid var(--gold);background:rgba(192,57,43,.12);color:var(--gold-bright);font-weight:700;font-size:14px;margin-bottom:8px}
+    .open-mini{flex:none;display:inline-flex;align-items:center;justify-content:center;padding:0 11px;border-radius:var(--r-sm);
+      border:1px solid var(--border);background:var(--surface);color:var(--gold-bright);font-weight:700;font-size:15px;text-decoration:none}
     .feed-filter{width:100%;font-size:14px;color:var(--text);background:var(--surface);border:1px solid var(--border);
       border-radius:var(--r-sm);padding:9px 11px;margin-bottom:4px}
     .ev{display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid var(--border)}
@@ -93,6 +97,7 @@
     <section class="card" id="feedCard" style="display:none">
       <div class="card-head">Add from the BNI calendar</div>
       <div class="body">
+        <a class="open-site" href="https://bni-singapore.com/en-SG/events" target="_blank" rel="noopener">Open BNI Singapore events site ↗</a>
         <input class="feed-filter" id="filter" placeholder="Filter events (e.g. Success, Visitor)…">
         <div id="feed"></div>
       </div>
@@ -100,7 +105,7 @@
 
     <div class="msg err" id="err"></div>
     <footer>Activity, date &amp; time come straight from the BNI Singapore calendar.<br>
-      For each row, paste the event&rsquo;s detail link and tap <b>Get</b> to auto-fill Location &amp; Seats Left — or type them.<br>
+      To fill seats: tap <b>↗</b> to open the events site, click the event, <b>copy the link from your browser&rsquo;s address bar</b>, paste it back here, then tap <b>Get</b> — it fills Location &amp; Seats Left for you. (Or just type them.)<br>
       <b>Update</b> rewrites the slide-127 table to match these rows and stamps the time.</footer>
   </main>
 
@@ -138,8 +143,10 @@
         '<div><label>Date</label><input class="inp sm f-date" value="'+esc(d.date||'')+'" placeholder="2 Oct"></div>'+
         '<div><label>Time</label><input class="inp sm f-time" value="'+esc(d.time||'')+'" placeholder="1pm - 5pm"></div>'+
       '</div>'+
-      '<div><label>Auto-fill from event link (optional)</label>'+
-        '<div class="link-row"><input class="inp sm f-link" placeholder="paste eventdetails?eventId=… link"><button class="btn-sm f-get">Get</button></div>'+
+      '<div><label>Auto-fill seats &amp; location — open ↗, click the event, copy its URL, paste, Get</label>'+
+        '<div class="link-row"><input class="inp sm f-link" placeholder="paste the event&rsquo;s link">'+
+        '<a class="open-mini" href="https://bni-singapore.com/en-SG/events" target="_blank" rel="noopener" title="Open BNI events">↗</a>'+
+        '<button class="btn-sm f-get">Get</button></div>'+
         '<div class="status f-status"></div></div>'+
       '<div class="grid3">'+
         '<div><label>Location</label><input class="inp sm f-loc" value="'+esc(d.location||'')+'" placeholder="BNI Singapore HQ"></div>'+
