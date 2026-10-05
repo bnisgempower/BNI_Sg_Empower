@@ -73,6 +73,10 @@
     .msg.err{background:rgba(224,92,92,.12);border:1px solid rgba(224,92,92,.4);color:#f0a0a0}
     .msg.ok{background:rgba(92,201,118,.12);border:1px solid rgba(92,201,118,.4);color:#a7e0b8}
     .loading{color:var(--text-muted);text-align:center;padding:40px;font-size:14px}
+    .loading .retry{margin-top:12px;padding:9px 20px;border-radius:var(--r-sm);border:1px solid var(--gold);
+      background:rgba(192,57,43,.12);color:var(--gold-bright);font-family:inherit;font-weight:700;font-size:14px;cursor:pointer}
+    .feed-hint{font-size:12px;line-height:1.45;color:var(--gold-bright);background:rgba(192,57,43,.1);
+      border:1px solid rgba(192,57,43,.35);border-radius:var(--r-sm);padding:9px 11px;margin-bottom:8px}
     footer{text-align:center;font-size:11px;color:var(--text-dim);padding:18px 16px 8px;line-height:1.5}
     .spin{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--gold-bright);border-radius:50%;
       display:inline-block;vertical-align:middle;animation:sp .6s linear infinite}
@@ -123,9 +127,12 @@
 
   let FEED = [];
 
-  async function callGet(action, params={}){
+  async function callGet(action, params={}, timeoutMs=45000){
     const qs = new URLSearchParams({action, ...params}).toString();
-    return fetch(APPS_SCRIPT_URL+'?'+qs, {cache:'no-store'}).then(r=>r.json());
+    const ctrl = new AbortController();
+    const t = setTimeout(()=>ctrl.abort(), timeoutMs);
+    try { return await fetch(APPS_SCRIPT_URL+'?'+qs, {cache:'no-store', signal:ctrl.signal}).then(r=>r.json()); }
+    finally { clearTimeout(t); }
   }
 
   // ── One editable slide row ──
@@ -154,6 +161,13 @@
       '</div>';
     card.querySelector('.rm').addEventListener('click', ()=>{ card.remove(); renumber(); });
     card.querySelector('.f-get').addEventListener('click', ()=>getSeats(card));
+    // Auto-fill the moment a link is pasted (or the box loses focus) — no need
+    // to tap Get. Only fires when the value actually looks like an event link.
+    const linkEl = card.querySelector('.f-link');
+    const looksLink = v => /eventid=|bni-singapore\.com/i.test(v);
+    const autoGet = ()=>{ if(looksLink(linkEl.value.trim())) getSeats(card); };
+    linkEl.addEventListener('paste', ()=> setTimeout(autoGet, 60));
+    linkEl.addEventListener('change', autoGet);
     $('rows').appendChild(card);
     renumber();
     return card;
@@ -179,13 +193,20 @@
 
   // ── Calendar feed list ──
   function renderFeed(){
-    const q = $('filter').value.trim().toLowerCase();
+    let q = $('filter').value.trim().toLowerCase();
+    // A pasted URL in the FILTER box used to blank the whole list. Detect it,
+    // keep the full list showing, and point the user to the right box.
+    let hint = '';
+    if(/https?:|eventid=/.test(q)){
+      hint = '<div class="feed-hint">That looks like an event <b>link</b> — paste it into a row below (the “paste the event’s link” box), not here. It fills Location &amp; Seats automatically.</div>';
+      q = '';
+    }
     const list = FEED.filter(ev => !q || (ev.clean+' '+ev.title+' '+ev.date).toLowerCase().includes(q));
-    $('feed').innerHTML = list.length ? list.map((ev,i)=>
+    $('feed').innerHTML = hint + (list.length ? list.map((ev,i)=>
       '<div class="ev" data-i="'+FEED.indexOf(ev)+'"><div class="info"><div class="t">'+esc(ev.clean||ev.title)+'</div>'+
       '<div class="m">'+esc(ev.date)+' · '+esc(ev.time)+'</div></div>'+
       '<button class="plus">+</button></div>'
-    ).join('') : '<div style="color:var(--text-muted);font-size:13px;padding:8px 6px">No upcoming events match.</div>';
+    ).join('') : '<div style="color:var(--text-muted);font-size:13px;padding:8px 6px">No upcoming events match.</div>');
     $('feed').querySelectorAll('.ev').forEach(el=>{
       el.querySelector('.plus').addEventListener('click', ()=>{
         const ev = FEED[+el.dataset.i];
@@ -197,6 +218,7 @@
   }
 
   (async function init(){
+    $('loading').textContent='Loading events…'; $('loading').style.display='block'; $('rows').innerHTML='';
     try{
       const res = await callGet('getAnnouncementsOptions');
       FEED = res.events || [];
@@ -208,7 +230,10 @@
       $('feedCard').style.display='block';
       $('savebar').style.display='flex';
       if(res.tableFound===false) showErr('Heads up: the Announcements table wasn’t found on the slide — updating may not work until that’s checked.');
-    }catch(e){ $('loading').textContent='Couldn’t load. Pull to refresh.'; }
+    }catch(e){
+      $('loading').innerHTML = 'Couldn’t load events (the server took too long or the connection dropped).<br><button class="retry" id="retry">Retry</button>';
+      const rt = $('retry'); if(rt) rt.addEventListener('click', init);
+    }
   })();
 
   $('addBlank').addEventListener('click', ()=>{ const c=addRow({location:'BNI Singapore HQ'}); c.scrollIntoView({behavior:'smooth',block:'center'}); });
