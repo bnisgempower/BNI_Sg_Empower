@@ -50,6 +50,8 @@
     .cell.absent .nm{text-decoration:line-through;color:var(--danger)}
     .cell.absent .num{color:var(--danger)}
     .cell.absent .tag{display:block}
+    .cell.locked{cursor:default;border-style:dashed;border-color:#3a3a3a}
+    .cell .lock{position:absolute;top:4px;right:6px;font-size:10px;opacity:.55}
     .cell.lift{box-shadow:0 12px 30px rgba(0,0,0,.6);border-color:var(--gold-bright);background:var(--surface);cursor:grabbing;transform:scale(1.04)}
     .cell.ph{background:rgba(218,169,77,.1);border:1px dashed var(--gold-bright)}
 
@@ -88,7 +90,7 @@
 
   <div class="loading" id="loading"><span class="spin"></span> Loading members…</div>
   <div class="grid" id="grid" style="display:none"></div>
-  <div class="hint" id="hint" style="display:none">Hold a name ~½ sec to mark <b>absent</b> (hold again to bring back). Drag a name to reorder. Numbers show the presenting order.</div>
+  <div class="hint" id="hint" style="display:none">Hold a name ~½ sec to mark <b>absent</b> (hold again to bring back). Drag to reorder. 🔒 leadership always presents last. Numbers show the presenting order.</div>
 
   <div class="savebar" id="savebar" style="display:none">
     <input class="pin" id="pin" type="password" inputmode="numeric" placeholder="MC PIN">
@@ -107,6 +109,20 @@
   let order   = [];           // names, in presenting sequence
   const absent = new Set();   // names currently absent
 
+  // Leadership closes the segment: these three ALWAYS occupy the last three
+  // spots, in this exact order (Iskons last). They can't be dragged and are
+  // skipped by A–Z / Random — only their absent state is editable.
+  const PINNED = ['Rachel Teo', 'Pang Wee Khai', 'Iskons'];
+  const keyOf  = n => String(n).toLowerCase().replace(/[^a-z]/g, '');
+  const PINNED_KEYS = PINNED.map(keyOf);
+  const isPinned = n => PINNED_KEYS.indexOf(keyOf(n)) !== -1;
+  // Reassemble `order` as [free members…] + [pinned present, in PINNED order].
+  function enforceOrder(){
+    const free = order.filter(n => !isPinned(n));
+    const tail = PINNED.filter(p => order.some(n => keyOf(n) === keyOf(p)));
+    order = free.concat(tail);
+  }
+
   function vibrate(ms){ try{ navigator.vibrate && navigator.vibrate(ms||25); }catch(_){} }
   function toast(msg, ok){ const t=$('toast'); t.textContent=msg; t.className='toast show '+(ok?'ok':'err'); clearTimeout(t._t); t._t=setTimeout(()=>t.className='toast',4200); }
 
@@ -119,12 +135,15 @@
 
   // ── Render ──
   function render(){
+    enforceOrder();
     grid.innerHTML='';
     order.forEach(name=>{
+      const pinned = isPinned(name);
       const c=document.createElement('div');
-      c.className='cell'+(absent.has(name)?' absent':'');
+      c.className='cell'+(absent.has(name)?' absent':'')+(pinned?' locked':'');
       c.dataset.key=name;
-      c.innerHTML='<span class="num"></span><span class="nm">'+esc(name)+'</span><span class="tag">ABSENT</span>';
+      c.innerHTML='<span class="num"></span><span class="nm">'+esc(name)+'</span>'+
+                  (pinned?'<span class="lock">🔒</span>':'')+'<span class="tag">ABSENT</span>';
       attachGestures(c);
       grid.appendChild(c);
     });
@@ -164,7 +183,8 @@
     c.addEventListener('pointermove', e=>{
       if(pid===null) return;
       const dx=e.clientX-sx, dy=e.clientY-sy;
-      if(!drag && !longed && (Math.abs(dx)+Math.abs(dy))>10){ clearTimeout(timer); drag=true; startDrag(c,e); }
+      // Pinned (leadership) cards can't be reordered — only toggled absent.
+      if(!drag && !longed && !isPinned(c.dataset.key) && (Math.abs(dx)+Math.abs(dy))>10){ clearTimeout(timer); drag=true; startDrag(c,e); }
       if(drag){ e.preventDefault(); moveDrag(e); }
     });
     const end=()=>{ if(pid===null) return; clearTimeout(timer);
@@ -195,6 +215,8 @@
     const under=document.elementFromPoint(e.clientX, e.clientY);
     const cell=under && under.closest ? under.closest('.cell') : null;
     if(cell && cell!==placeholder && cell.parentNode===grid){
+      // Never let a card land on/after a pinned (leadership) card — keep them last.
+      if(isPinned(cell.dataset.key)){ grid.insertBefore(placeholder, cell); return; }
       const r=cell.getBoundingClientRect();
       grid.insertBefore(placeholder, (e.clientX > r.left + r.width/2) ? cell.nextSibling : cell);
     }
@@ -207,13 +229,14 @@
     c.style.position=''; c.style.left=''; c.style.top=''; c.style.width=''; c.style.height=''; c.style.zIndex=''; c.style.pointerEvents='';
     c.classList.remove('lift');
     order=[...grid.children].map(x=>x.dataset.key);
-    dragEl=null; renumber(); vibrate(15);
+    dragEl=null;
+    enforceOrder(); render(); vibrate(15);
   }
 
   // ── Toolbar ──
   function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
-  $('btnAZ').addEventListener('click', ()=>{ order=order.slice().sort((a,b)=>a.localeCompare(b)); render(); });
-  $('btnShuffle').addEventListener('click', ()=>{ order=shuffle(order.slice()); render(); vibrate(15); });
+  $('btnAZ').addEventListener('click', ()=>{ order=order.filter(n=>!isPinned(n)).sort((a,b)=>a.localeCompare(b)); render(); });
+  $('btnShuffle').addEventListener('click', ()=>{ order=shuffle(order.filter(n=>!isPinned(n))); render(); vibrate(15); });
   $('btnPresent').addEventListener('click', ()=>{ absent.clear(); render(); });
 
   // ── Load ──
