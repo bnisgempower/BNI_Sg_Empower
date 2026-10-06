@@ -30,10 +30,19 @@
       color:var(--text);font-family:inherit;font-weight:700;font-size:12.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px}
     .tbtn:active{transform:scale(.97);background:var(--surface2)}
     .tbtn .ic{font-size:14px}
+    .tbtn.reorder.on{background:var(--gold);border-color:var(--gold);color:#000}
+    .tbtn:disabled{opacity:.4}
     .count{flex:none;font-size:11px;font-weight:700;color:var(--gold-bright);padding:0 4px;white-space:nowrap}
+    .toolbar{flex-wrap:wrap}
 
     .grid{flex:1;min-height:0;display:grid;gap:7px;padding:9px 12px;overflow:hidden;
-      grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;touch-action:none}
+      grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;touch-action:manipulation}
+    .grid.reordering{touch-action:none}
+    .grid.reordering .cell:not(.locked){animation:jiggle .3s ease-in-out infinite alternate}
+    @keyframes jiggle{from{transform:rotate(-1deg)}to{transform:rotate(1deg)}}
+    .sortable-ghost{opacity:.25}
+    .sortable-chosen{box-shadow:0 12px 30px rgba(0,0,0,.6);border-color:var(--gold-bright)!important;animation:none!important;transform:scale(1.05)}
+    .sortable-drag{animation:none!important}
     @media (min-width:500px){ .grid{grid-template-columns:repeat(4,1fr)} }
     @media (min-width:768px){ .grid{grid-template-columns:repeat(5,1fr);gap:10px;padding:12px 16px} }
     @media (min-width:1024px){ .grid{grid-template-columns:repeat(6,1fr)} }
@@ -85,12 +94,13 @@
     <button class="tbtn" id="btnAZ"><span class="ic">↕</span> A–Z</button>
     <button class="tbtn" id="btnShuffle"><span class="ic">🔀</span> Random</button>
     <button class="tbtn" id="btnPresent"><span class="ic">✓</span> All in</button>
+    <button class="tbtn reorder" id="btnReorder"><span class="ic">⠿</span> Reorder</button>
     <span class="count" id="count"></span>
   </div>
 
   <div class="loading" id="loading"><span class="spin"></span> Loading members…</div>
   <div class="grid" id="grid" style="display:none"></div>
-  <div class="hint" id="hint" style="display:none">Hold a name ~½ sec to mark <b>absent</b> (hold again to bring back). Drag to reorder. 🔒 leadership always presents last. Numbers show the presenting order.</div>
+  <div class="hint" id="hint" style="display:none"><span id="hintNormal"><b>Tap</b> a name to mark it <b>absent</b> (tap again to bring back). Tap <b>Reorder</b> to drag names around. 🔒 leadership always presents last.</span><span id="hintReorder" style="display:none"><b>Drag</b> names to reorder — the row makes space as you move. Tap <b>Done</b> when finished. 🔒 leadership stays last.</span></div>
 
   <div class="savebar" id="savebar" style="display:none">
     <input class="pin" id="pin" type="password" inputmode="numeric" placeholder="MC PIN">
@@ -99,6 +109,7 @@
 
   <div class="toast" id="toast"></div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.6/Sortable.min.js"></script>
   <script>
   const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxYCpexo7cuQwYMpBwLtVn48hEQAoz1PQw17INXwZpXz-nh7foLB4-8Dhct2a7yNE8lMg/exec';
   const $ = id => document.getElementById(id);
@@ -134,6 +145,9 @@
   }
 
   // ── Render ──
+  let reorderMode = false;
+  let sortable = null;
+
   function render(){
     enforceOrder();
     grid.innerHTML='';
@@ -144,7 +158,7 @@
       c.dataset.key=name;
       c.innerHTML='<span class="num"></span><span class="nm">'+esc(name)+'</span>'+
                   (pinned?'<span class="lock">🔒</span>':'')+'<span class="tag">ABSENT</span>';
-      attachGestures(c);
+      c.addEventListener('click', ()=>{ if(!reorderMode) toggle(c); });
       grid.appendChild(c);
     });
     renumber(); updateCount();
@@ -152,8 +166,7 @@
   function renumber(){
     let k=0;
     [...grid.children].forEach(c=>{
-      if(c.classList.contains('ph')) return;
-      const num=c.querySelector('.num');
+      const num=c.querySelector('.num'); if(!num) return;
       if(c.classList.contains('absent')){ num.textContent='–'; }
       else { k++; num.textContent=k; }
     });
@@ -166,78 +179,45 @@
     const n=c.dataset.key;
     if(absent.has(n)){ absent.delete(n); c.classList.remove('absent'); }
     else { absent.add(n); c.classList.add('absent'); }
-    renumber(); updateCount();
+    renumber(); updateCount(); vibrate(12);
   }
 
-  // ── Smart single gesture: hold still ~0.42s = toggle; press+move = drag ──
-  let dragEl=null, placeholder=null, offX=0, offY=0;
-
-  function attachGestures(c){
-    let timer=null, sx=0, sy=0, drag=false, longed=false, pid=null;
-    c.addEventListener('pointerdown', e=>{
-      if(e.button && e.button!==0) return;
-      pid=e.pointerId; sx=e.clientX; sy=e.clientY; drag=false; longed=false;
-      try{ c.setPointerCapture(pid); }catch(_){}
-      timer=setTimeout(()=>{ if(!drag){ longed=true; toggle(c); vibrate(); } }, 420);
+  // ── Reorder mode — SortableJS gives the iOS-style "make room" drag ──
+  function initSortable(){
+    if(sortable || typeof Sortable==='undefined') return;
+    sortable = Sortable.create(grid, {
+      animation:160, disabled:true, draggable:'.cell', filter:'.locked',
+      forceFallback:true, fallbackTolerance:4,
+      onMove:function(evt){
+        // Keep leadership pinned last: never drop onto/after a locked card.
+        if(evt.related && evt.related.classList.contains('locked')) return false;
+        return true;
+      },
+      onEnd:function(){
+        order=[...grid.children].map(x=>x.dataset.key);
+        render();          // re-syncs order (enforce) + numbers
+        vibrate(14);
+      }
     });
-    c.addEventListener('pointermove', e=>{
-      if(pid===null) return;
-      const dx=e.clientX-sx, dy=e.clientY-sy;
-      // Pinned (leadership) cards can't be reordered — only toggled absent.
-      if(!drag && !longed && !isPinned(c.dataset.key) && (Math.abs(dx)+Math.abs(dy))>10){ clearTimeout(timer); drag=true; startDrag(c,e); }
-      if(drag){ e.preventDefault(); moveDrag(e); }
-    });
-    const end=()=>{ if(pid===null) return; clearTimeout(timer);
-      try{ c.releasePointerCapture(pid); }catch(_){}
-      if(drag) endDrag();
-      pid=null; drag=false; longed=false;
-    };
-    c.addEventListener('pointerup', end);
-    c.addEventListener('pointercancel', end);
   }
-
-  function startDrag(c,e){
-    dragEl=c;
-    const r=c.getBoundingClientRect();
-    offX=e.clientX-r.left; offY=e.clientY-r.top;
-    placeholder=document.createElement('div');
-    placeholder.className='cell ph';
-    grid.insertBefore(placeholder, c);
-    c.style.position='fixed'; c.style.left=r.left+'px'; c.style.top=r.top+'px';
-    c.style.width=r.width+'px'; c.style.height=r.height+'px'; c.style.zIndex='1000'; c.style.pointerEvents='none';
-    c.classList.add('lift');
-    document.body.appendChild(c);
+  function setReorder(on){
+    if(on && !sortable){ toast('Reorder isn’t available — check your connection and reload.', false); return; }
+    reorderMode=on;
+    if(sortable) sortable.option('disabled', !on);
+    $('btnReorder').classList.toggle('on', on);
+    $('btnReorder').innerHTML = on ? '<span class="ic">✓</span> Done' : '<span class="ic">⠿</span> Reorder';
+    ['btnAZ','btnShuffle','btnPresent'].forEach(id=> $(id).disabled = on);
+    grid.classList.toggle('reordering', on);
+    $('hintNormal').style.display  = on ? 'none' : 'inline';
+    $('hintReorder').style.display = on ? 'inline' : 'none';
   }
-  function moveDrag(e){
-    if(!dragEl) return;
-    dragEl.style.left=(e.clientX-offX)+'px';
-    dragEl.style.top =(e.clientY-offY)+'px';
-    const under=document.elementFromPoint(e.clientX, e.clientY);
-    const cell=under && under.closest ? under.closest('.cell') : null;
-    if(cell && cell!==placeholder && cell.parentNode===grid){
-      // Never let a card land on/after a pinned (leadership) card — keep them last.
-      if(isPinned(cell.dataset.key)){ grid.insertBefore(placeholder, cell); return; }
-      const r=cell.getBoundingClientRect();
-      grid.insertBefore(placeholder, (e.clientX > r.left + r.width/2) ? cell.nextSibling : cell);
-    }
-  }
-  function endDrag(){
-    if(!dragEl) return;
-    grid.insertBefore(dragEl, placeholder);
-    placeholder.remove(); placeholder=null;
-    const c=dragEl;
-    c.style.position=''; c.style.left=''; c.style.top=''; c.style.width=''; c.style.height=''; c.style.zIndex=''; c.style.pointerEvents='';
-    c.classList.remove('lift');
-    order=[...grid.children].map(x=>x.dataset.key);
-    dragEl=null;
-    enforceOrder(); render(); vibrate(15);
-  }
+  $('btnReorder').addEventListener('click', ()=> setReorder(!reorderMode));
 
   // ── Toolbar ──
   function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
-  $('btnAZ').addEventListener('click', ()=>{ order=order.filter(n=>!isPinned(n)).sort((a,b)=>a.localeCompare(b)); render(); });
-  $('btnShuffle').addEventListener('click', ()=>{ order=shuffle(order.filter(n=>!isPinned(n))); render(); vibrate(15); });
-  $('btnPresent').addEventListener('click', ()=>{ absent.clear(); render(); });
+  $('btnAZ').addEventListener('click', ()=>{ if(reorderMode) return; order=order.filter(n=>!isPinned(n)).sort((a,b)=>a.localeCompare(b)); render(); });
+  $('btnShuffle').addEventListener('click', ()=>{ if(reorderMode) return; order=shuffle(order.filter(n=>!isPinned(n))); render(); vibrate(15); });
+  $('btnPresent').addEventListener('click', ()=>{ if(reorderMode) return; absent.clear(); render(); });
 
   // ── Load ──
   async function init(){
@@ -250,6 +230,7 @@
       absent.clear();
       MEMBERS.forEach(m=>{ if(m.absent) absent.add(m.name); });
       render();
+      initSortable();
       $('loading').style.display='none';
       $('toolbar').style.display='flex';
       grid.style.display='grid';
