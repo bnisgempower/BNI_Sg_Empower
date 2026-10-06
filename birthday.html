@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#c0392b">
+  <title>BNI Empower — Birthday Slide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --gold:#c0392b; --gold-bright:#daa94d; --bg:#0d0d0d; --bg2:#141414; --surface:#1c1c1c; --surface2:#252525;
+      --border:#2e2e2e; --text:#f0ede8; --text-muted:#8c8c8c; --danger:#e05c5c; --success:#5cc976;
+      --r-sm:8px; --r:14px; --r-lg:18px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{-webkit-tap-highlight-color:transparent}
+    body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);
+      min-height:100dvh;display:flex;flex-direction:column;align-items:center;padding-bottom:max(env(safe-area-inset-bottom),96px)}
+    .header{width:100%;background:var(--bg2);border-bottom:1px solid var(--border);padding:16px 20px;
+      display:flex;align-items:center;justify-content:center;gap:12px;position:sticky;top:0;z-index:20}
+    .logo-mark{width:40px;height:40px;background:var(--gold);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;color:#000}
+    .header-text h1{font-size:17px;font-weight:800}
+    .header-text p{font-size:12px;color:var(--text-muted)}
+    .container{width:100%;max-width:560px;padding:16px 14px 0;flex:1;display:flex;flex-direction:column;gap:14px}
+    .monthbar{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:10px 12px}
+    .monthbar .nav{width:40px;height:40px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--gold-bright);font-size:20px;font-weight:800;cursor:pointer}
+    .monthbar .nav:active{transform:scale(.95)}
+    .monthbar .m{flex:1;text-align:center}
+    .monthbar .m .mn{font-size:19px;font-weight:800}
+    .monthbar .m .c{font-size:12px;color:var(--text-muted);margin-top:2px}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+    .card-head{padding:12px 16px;background:var(--bg2);border-bottom:1px solid var(--border);font-size:13px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--gold-bright)}
+    .rowb{display:flex;align-items:center;gap:11px;padding:11px 14px;border-bottom:1px solid var(--border)}
+    .rowb:last-child{border-bottom:none}
+    .rowb .cake{font-size:18px}
+    .rowb .info{flex:1;min-width:0}
+    .rowb .nm{font-size:15px;font-weight:600}
+    .rowb .dt{font-size:12px;color:var(--text-muted)}
+    .pill{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:999px;white-space:nowrap}
+    .pill.ok{background:rgba(92,201,118,.14);color:#a7e0b8;border:1px solid rgba(92,201,118,.4)}
+    .pill.no{background:rgba(224,92,92,.14);color:#f0a0a0;border:1px solid rgba(224,92,92,.4)}
+    .empty{padding:26px 16px;text-align:center;color:var(--text-muted);font-size:14px}
+    .note{font-size:12px;color:var(--text-muted);line-height:1.5;padding:0 4px}
+    .savebar{position:fixed;left:0;right:0;bottom:0;background:var(--bg2);border-top:1px solid var(--border);
+      padding:12px 14px max(env(safe-area-inset-bottom),12px);display:flex;gap:10px;align-items:center;z-index:30}
+    .savebar .pin{width:104px;font-size:16px;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px}
+    .savebar .btn{flex:1;font-size:16px;font-weight:800;color:#000;background:var(--gold);border:none;border-radius:var(--r);padding:13px;cursor:pointer}
+    .savebar .btn:disabled{opacity:.5}
+    .toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 70px);transform:translateX(-50%);max-width:90%;
+      font-size:13px;line-height:1.4;padding:11px 15px;border-radius:var(--r);z-index:50;display:none;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+    .toast.show{display:block}
+    .toast.ok{background:#17351f;border:1px solid rgba(92,201,118,.5);color:#bdeccb}
+    .toast.err{background:#3a1a1a;border:1px solid rgba(224,92,92,.5);color:#f1b0b0}
+    .loading{color:var(--text-muted);text-align:center;padding:40px;font-size:14px}
+    .spin{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--gold-bright);border-radius:50%;display:inline-block;vertical-align:middle;animation:sp .6s linear infinite}
+    @keyframes sp{to{transform:rotate(360deg)}}
+    footer{text-align:center;font-size:11px;color:var(--text-dim,#4a4a4a);padding:16px 16px 8px;line-height:1.5}
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="logo-mark">B</div>
+    <div class="header-text"><h1>Birthday Slide</h1><p>🎂 auto faces, dates &amp; party hats</p></div>
+  </header>
+
+  <main class="container">
+    <div class="monthbar">
+      <button class="nav" id="prev">‹</button>
+      <div class="m"><div class="mn" id="monthName">…</div><div class="c" id="countLine"></div></div>
+      <button class="nav" id="next">›</button>
+    </div>
+
+    <div class="card">
+      <div class="card-head">Celebrating this month</div>
+      <div id="list"><div class="loading" id="loading"><span class="spin"></span> Loading…</div></div>
+    </div>
+
+    <p class="note">Faces come from the Headshots folder and the date from each member's birthday (no year). Members with no photo get a date + hat but no face — add their headshot to Drive and rebuild.</p>
+    <footer>Building shows this slide in the deck. It also rebuilds automatically whenever you switch the meeting to <b>Physical</b> mode.</footer>
+  </main>
+
+  <div class="savebar">
+    <input class="pin" id="pin" type="password" inputmode="numeric" placeholder="MC PIN">
+    <button class="btn" id="build">Build &amp; show slide</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxYCpexo7cuQwYMpBwLtVn48hEQAoz1PQw17INXwZpXz-nh7foLB4-8Dhct2a7yNE8lMg/exec';
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  function toast(m, ok){ const t=$('toast'); t.textContent=m; t.className='toast show '+(ok?'ok':'err'); clearTimeout(t._t); t._t=setTimeout(()=>t.className='toast',4600); }
+
+  async function callGet(action, params={}, timeoutMs=60000){
+    const qs=new URLSearchParams({action,...params}).toString();
+    const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),timeoutMs);
+    try{ return await fetch(APPS_SCRIPT_URL+'?'+qs,{cache:'no-store',signal:ctrl.signal}).then(r=>r.json()); }
+    finally{ clearTimeout(t); }
+  }
+
+  let month = 0;   // 0 = auto (server picks the upcoming meeting's month)
+
+  function renderPreview(res){
+    $('monthName').textContent = res.monthName || '';
+    month = res.month;   // lock to the resolved month for nav + build
+    const n = res.count||0;
+    $('countLine').textContent = n ? (n+' member'+(n===1?'':'s')) : 'no birthdays';
+    if(!n){ $('list').innerHTML = '<div class="empty">No birthdays in '+esc(res.monthName)+'. Building will just hide the slide.</div>'; return; }
+    $('list').innerHTML = (res.members||[]).map(m=>
+      '<div class="rowb"><span class="cake">🎂</span><div class="info"><div class="nm">'+esc(m.name)+'</div>'+
+      '<div class="dt">'+esc(m.date)+'</div></div>'+
+      (m.hasPhoto ? '<span class="pill ok">photo ✓</span>' : '<span class="pill no">no photo</span>')+'</div>'
+    ).join('');
+  }
+
+  async function load(){
+    $('list').innerHTML = '<div class="loading"><span class="spin"></span> Loading…</div>';
+    try{ renderPreview(await callGet('getBirthday', month? {month}:{})); }
+    catch(e){ $('list').innerHTML = '<div class="empty">Couldn’t load. Tap a month arrow to retry.</div>'; }
+  }
+
+  $('prev').addEventListener('click', ()=>{ month = (month||1)-1; if(month<1) month=12; load(); });
+  $('next').addEventListener('click', ()=>{ month = (month||12)+1; if(month>12) month=1; load(); });
+
+  $('build').addEventListener('click', async ()=>{
+    const pin=$('pin').value.trim();
+    if(!pin){ toast('Enter the MC PIN.', false); return; }
+    const b=$('build'); b.disabled=true; b.textContent='Building…';
+    try{
+      const r = await callGet('updateBirthday', month? {pin,month}:{pin});
+      if(r.status==='error'){ toast(r.message||'Failed.', false); }
+      else if(r.error){ toast(r.error, false); }
+      else if(!r.count){ toast('No birthdays in '+(r.monthName||'this month')+' — slide hidden.', true); }
+      else {
+        let msg='✓ Built '+r.count+' for '+r.monthName+'.';
+        if(r.missingPhotos && r.missingPhotos.length) msg+=' No photo: '+r.missingPhotos.join(', ')+'.';
+        toast(msg, true);
+      }
+    }catch(e){ toast('Network error — try again.', false); }
+    b.disabled=false; b.textContent='Build & show slide';
+  });
+
+  load();
+  </script>
+</body>
+</html>
