@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#c0392b">
+  <title>BNI Empower — Weekly Lineup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --gold:#c0392b; --gold-bright:#daa94d; --bg:#0d0d0d; --bg2:#141414; --surface:#1c1c1c; --surface2:#252525;
+      --border:#2e2e2e; --text:#f0ede8; --text-muted:#8c8c8c; --danger:#e05c5c; --success:#5cc976;
+      --r-sm:8px; --r:12px; --r-lg:16px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;overflow:hidden;-webkit-tap-highlight-color:transparent}
+    body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);
+      height:100dvh;display:flex;flex-direction:column;overscroll-behavior:none}
+
+    .header{flex:none;background:var(--bg2);border-bottom:1px solid var(--border);
+      padding:calc(10px + env(safe-area-inset-top)) 16px 10px;display:flex;align-items:center;gap:11px}
+    .logo-mark{width:34px;height:34px;background:var(--gold);border-radius:9px;display:flex;align-items:center;
+      justify-content:center;font-weight:800;font-size:19px;color:#000;flex:none}
+    .header h1{font-size:15px;font-weight:800;line-height:1.1}
+    .header p{font-size:11px;color:var(--text-muted)}
+
+    .toolbar{flex:none;display:flex;align-items:center;gap:7px;padding:9px 12px;background:var(--bg);border-bottom:1px solid var(--border)}
+    .tbtn{flex:1;min-width:0;padding:9px 6px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface);
+      color:var(--text);font-family:inherit;font-weight:700;font-size:12.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px}
+    .tbtn:active{transform:scale(.97);background:var(--surface2)}
+    .tbtn .ic{font-size:14px}
+    .count{flex:none;font-size:11px;font-weight:700;color:var(--gold-bright);padding:0 4px;white-space:nowrap}
+
+    .grid{flex:1;min-height:0;display:grid;gap:7px;padding:9px 12px;overflow:hidden;
+      grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;touch-action:none}
+    @media (min-width:500px){ .grid{grid-template-columns:repeat(4,1fr)} }
+    @media (min-width:768px){ .grid{grid-template-columns:repeat(5,1fr);gap:10px;padding:12px 16px} }
+    @media (min-width:1024px){ .grid{grid-template-columns:repeat(6,1fr)} }
+
+    .cell{position:relative;border:1px solid var(--border);border-radius:var(--r);background:var(--surface2);
+      display:flex;align-items:center;justify-content:center;padding:6px 7px 6px 7px;text-align:center;
+      user-select:none;-webkit-user-select:none;cursor:grab;transition:background .12s,border-color .12s,opacity .12s,transform .08s}
+    .cell .nm{font-size:clamp(11px,2.4vh,15px);font-weight:600;line-height:1.15;
+      display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .cell .num{position:absolute;top:4px;left:6px;font-size:11px;font-weight:800;color:var(--gold-bright)}
+    .cell .tag{position:absolute;bottom:4px;right:6px;font-size:8.5px;font-weight:800;letter-spacing:.5px;
+      color:var(--danger);display:none}
+    .cell.absent{background:rgba(224,92,92,.08);border-color:rgba(224,92,92,.4);opacity:.85}
+    .cell.absent .nm{text-decoration:line-through;color:var(--danger)}
+    .cell.absent .num{color:var(--danger)}
+    .cell.absent .tag{display:block}
+    .cell.lift{box-shadow:0 12px 30px rgba(0,0,0,.6);border-color:var(--gold-bright);background:var(--surface);cursor:grabbing;transform:scale(1.04)}
+    .cell.ph{background:rgba(218,169,77,.1);border:1px dashed var(--gold-bright)}
+
+    .savebar{flex:none;background:var(--bg2);border-top:1px solid var(--border);
+      padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:flex;gap:9px;align-items:center}
+    .savebar .pin{width:92px;font-size:16px;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:11px 10px}
+    .savebar .btn{flex:1;font-size:16px;font-weight:800;color:#000;background:var(--gold);border:none;border-radius:var(--r);padding:12px;cursor:pointer}
+    .savebar .btn:disabled{opacity:.5}
+    .savebar .btn:active{transform:scale(.98)}
+
+    .toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 64px);transform:translateX(-50%);
+      max-width:90%;font-size:13px;line-height:1.4;padding:11px 15px;border-radius:var(--r);z-index:50;display:none;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+    .toast.show{display:block}
+    .toast.ok{background:#17351f;border:1px solid rgba(92,201,118,.5);color:#bdeccb}
+    .toast.err{background:#3a1a1a;border:1px solid rgba(224,92,92,.5);color:#f1b0b0}
+    .loading{flex:1;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:14px;flex-direction:column;gap:12px}
+    .retry{padding:9px 20px;border-radius:var(--r-sm);border:1px solid var(--gold);background:rgba(192,57,43,.12);
+      color:var(--gold-bright);font-family:inherit;font-weight:700;font-size:14px;cursor:pointer}
+    .hint{flex:none;font-size:10.5px;color:var(--text-muted);text-align:center;padding:0 14px 6px;line-height:1.35}
+    .spin{width:15px;height:15px;border:2px solid var(--border);border-top-color:var(--gold-bright);border-radius:50%;display:inline-block;vertical-align:middle;animation:sp .6s linear infinite}
+    @keyframes sp{to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="logo-mark">B</div>
+    <div><h1>Weekly Lineup</h1><p>30-sec presentations · tap-hold = absent · drag = reorder</p></div>
+  </header>
+
+  <div class="toolbar" id="toolbar" style="display:none">
+    <button class="tbtn" id="btnAZ"><span class="ic">↕</span> A–Z</button>
+    <button class="tbtn" id="btnShuffle"><span class="ic">🔀</span> Random</button>
+    <button class="tbtn" id="btnPresent"><span class="ic">✓</span> All in</button>
+    <span class="count" id="count"></span>
+  </div>
+
+  <div class="loading" id="loading"><span class="spin"></span> Loading members…</div>
+  <div class="grid" id="grid" style="display:none"></div>
+  <div class="hint" id="hint" style="display:none">Hold a name ~½ sec to mark <b>absent</b> (hold again to bring back). Drag a name to reorder. Numbers show the presenting order.</div>
+
+  <div class="savebar" id="savebar" style="display:none">
+    <input class="pin" id="pin" type="password" inputmode="numeric" placeholder="MC PIN">
+    <button class="btn" id="save">Update slides</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxYCpexo7cuQwYMpBwLtVn48hEQAoz1PQw17INXwZpXz-nh7foLB4-8Dhct2a7yNE8lMg/exec';
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const grid = $('grid');
+
+  let MEMBERS = [];           // [{name}]
+  let order   = [];           // names, in presenting sequence
+  const absent = new Set();   // names currently absent
+
+  function vibrate(ms){ try{ navigator.vibrate && navigator.vibrate(ms||25); }catch(_){} }
+  function toast(msg, ok){ const t=$('toast'); t.textContent=msg; t.className='toast show '+(ok?'ok':'err'); clearTimeout(t._t); t._t=setTimeout(()=>t.className='toast',4200); }
+
+  async function callGet(action, params={}, timeoutMs=45000){
+    const qs = new URLSearchParams({action, ...params}).toString();
+    const ctrl = new AbortController(); const t=setTimeout(()=>ctrl.abort(), timeoutMs);
+    try{ return await fetch(APPS_SCRIPT_URL+'?'+qs,{cache:'no-store',signal:ctrl.signal}).then(r=>r.json()); }
+    finally{ clearTimeout(t); }
+  }
+
+  // ── Render ──
+  function render(){
+    grid.innerHTML='';
+    order.forEach(name=>{
+      const c=document.createElement('div');
+      c.className='cell'+(absent.has(name)?' absent':'');
+      c.dataset.key=name;
+      c.innerHTML='<span class="num"></span><span class="nm">'+esc(name)+'</span><span class="tag">ABSENT</span>';
+      attachGestures(c);
+      grid.appendChild(c);
+    });
+    renumber(); updateCount();
+  }
+  function renumber(){
+    let k=0;
+    [...grid.children].forEach(c=>{
+      if(c.classList.contains('ph')) return;
+      const num=c.querySelector('.num');
+      if(c.classList.contains('absent')){ num.textContent='–'; }
+      else { k++; num.textContent=k; }
+    });
+  }
+  function updateCount(){
+    const a=order.filter(n=>absent.has(n)).length;
+    $('count').textContent = a ? (a+' absent') : 'all in';
+  }
+  function toggle(c){
+    const n=c.dataset.key;
+    if(absent.has(n)){ absent.delete(n); c.classList.remove('absent'); }
+    else { absent.add(n); c.classList.add('absent'); }
+    renumber(); updateCount();
+  }
+
+  // ── Smart single gesture: hold still ~0.42s = toggle; press+move = drag ──
+  let dragEl=null, placeholder=null, offX=0, offY=0;
+
+  function attachGestures(c){
+    let timer=null, sx=0, sy=0, drag=false, longed=false, pid=null;
+    c.addEventListener('pointerdown', e=>{
+      if(e.button && e.button!==0) return;
+      pid=e.pointerId; sx=e.clientX; sy=e.clientY; drag=false; longed=false;
+      try{ c.setPointerCapture(pid); }catch(_){}
+      timer=setTimeout(()=>{ if(!drag){ longed=true; toggle(c); vibrate(); } }, 420);
+    });
+    c.addEventListener('pointermove', e=>{
+      if(pid===null) return;
+      const dx=e.clientX-sx, dy=e.clientY-sy;
+      if(!drag && !longed && (Math.abs(dx)+Math.abs(dy))>10){ clearTimeout(timer); drag=true; startDrag(c,e); }
+      if(drag){ e.preventDefault(); moveDrag(e); }
+    });
+    const end=()=>{ if(pid===null) return; clearTimeout(timer);
+      try{ c.releasePointerCapture(pid); }catch(_){}
+      if(drag) endDrag();
+      pid=null; drag=false; longed=false;
+    };
+    c.addEventListener('pointerup', end);
+    c.addEventListener('pointercancel', end);
+  }
+
+  function startDrag(c,e){
+    dragEl=c;
+    const r=c.getBoundingClientRect();
+    offX=e.clientX-r.left; offY=e.clientY-r.top;
+    placeholder=document.createElement('div');
+    placeholder.className='cell ph';
+    grid.insertBefore(placeholder, c);
+    c.style.position='fixed'; c.style.left=r.left+'px'; c.style.top=r.top+'px';
+    c.style.width=r.width+'px'; c.style.height=r.height+'px'; c.style.zIndex='1000'; c.style.pointerEvents='none';
+    c.classList.add('lift');
+    document.body.appendChild(c);
+  }
+  function moveDrag(e){
+    if(!dragEl) return;
+    dragEl.style.left=(e.clientX-offX)+'px';
+    dragEl.style.top =(e.clientY-offY)+'px';
+    const under=document.elementFromPoint(e.clientX, e.clientY);
+    const cell=under && under.closest ? under.closest('.cell') : null;
+    if(cell && cell!==placeholder && cell.parentNode===grid){
+      const r=cell.getBoundingClientRect();
+      grid.insertBefore(placeholder, (e.clientX > r.left + r.width/2) ? cell.nextSibling : cell);
+    }
+  }
+  function endDrag(){
+    if(!dragEl) return;
+    grid.insertBefore(dragEl, placeholder);
+    placeholder.remove(); placeholder=null;
+    const c=dragEl;
+    c.style.position=''; c.style.left=''; c.style.top=''; c.style.width=''; c.style.height=''; c.style.zIndex=''; c.style.pointerEvents='';
+    c.classList.remove('lift');
+    order=[...grid.children].map(x=>x.dataset.key);
+    dragEl=null; renumber(); vibrate(15);
+  }
+
+  // ── Toolbar ──
+  function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+  $('btnAZ').addEventListener('click', ()=>{ order=order.slice().sort((a,b)=>a.localeCompare(b)); render(); });
+  $('btnShuffle').addEventListener('click', ()=>{ order=shuffle(order.slice()); render(); vibrate(15); });
+  $('btnPresent').addEventListener('click', ()=>{ absent.clear(); render(); });
+
+  // ── Load ──
+  async function init(){
+    $('loading').innerHTML='<span class="spin"></span> Loading members…'; $('loading').style.display='flex';
+    grid.style.display='none';
+    try{
+      const res = await callGet('getWeeklyLineup');
+      MEMBERS = res.members || [];
+      order = MEMBERS.map(m=>m.name);
+      absent.clear();
+      MEMBERS.forEach(m=>{ if(m.absent) absent.add(m.name); });
+      render();
+      $('loading').style.display='none';
+      $('toolbar').style.display='flex';
+      grid.style.display='grid';
+      $('hint').style.display='block';
+      $('savebar').style.display='flex';
+    }catch(e){
+      $('loading').innerHTML='Couldn’t load members (server slow or connection dropped).<button class="retry" id="retry">Retry</button>';
+      const rt=$('retry'); if(rt) rt.addEventListener('click', init);
+    }
+  }
+  init();
+
+  // ── Apply ──
+  $('save').addEventListener('click', async ()=>{
+    const pin=$('pin').value.trim();
+    if(!pin){ toast('Enter the MC PIN to update.', false); return; }
+    const btn=$('save'); btn.disabled=true; btn.textContent='Updating…';
+    const payload={ formType:'applyWeeklyLineup', pin, order, absent:[...absent] };
+    let json=null;
+    try{
+      const r=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+      json=await r.json();
+    }catch(e){ json=null; }
+    btn.disabled=false; btn.textContent='Update slides';
+    if(json && json.status==='error'){ toast(json.message||'Update failed.', false); return; }
+    if(json && json.status==='ok'){
+      const parts=[];
+      parts.push((json.hiddenCount||0)+' hidden');
+      parts.push((json.moved||0)+' moved');
+      let msg='✓ Slides updated — '+parts.join(', ')+'.';
+      if(json.noNextBox && json.noNextBox.length) msg+=' Note: '+json.noNextBox.join(', ')+' has no on-slide “Next Presenter” box.';
+      if(json.unknown && json.unknown.length) msg+=' Unmatched: '+json.unknown.join(', ')+'.';
+      toast(msg, true); return;
+    }
+    // no JSON came back — treat as sent, nudge to verify
+    toast('Sent. Check the deck in a moment.', true);
+  });
+  </script>
+</body>
+</html>
